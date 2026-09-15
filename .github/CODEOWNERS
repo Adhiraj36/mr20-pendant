@@ -1,5 +1,5 @@
 # Every change to main needs review from the owner. Paired with
 # "require review from Code Owners" in the branch protection rule, this is what
-# makes the required approval specifically MelloB1989's rather than anyone's
+# makes the required approval specifically Adhiraj36's rather than anyone's
 # who happens to hold write access.
-* @MelloB1989
+* @Adhiraj36
