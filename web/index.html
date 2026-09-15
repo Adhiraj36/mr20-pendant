@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en" data-3d="poster">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0B0B0C" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="canonical" href="https://lyzn.ai/" />
+
+    <!-- The heading ink, before first paint.
+
+         The reader's pick lives in localStorage, and a module bundle cannot
+         be fetched, parsed and run before the first frame — so a stored ink
+         would flash the default first and then correct itself, on every
+         navigation. This reads it inline instead and sets the attribute the
+         cascade is already waiting on.
+
+         The key and the ids are `INK_STORAGE_KEY` and `inks` in
+         @lyzn/design. They are repeated rather than imported because
+         nothing may be imported here; change them there and change them
+         here. -->
+    <script>
+      ;(function () {
+        try {
+          var v = localStorage.getItem('lyzn.ink')
+          if (v && ['red', 'orange', 'green', 'blue', 'purple'].indexOf(v) > -1)
+            document.documentElement.setAttribute('data-ink', v)
+        } catch (e) {
+          /* no storage: the page is set in the default ink */
+        }
+      })()
+    </script>
+
+    <title>LYZN — the pendant that follows through</title>
+    <meta
+      name="description"
+      content="An AI pendant that remembers your conversations, turns them into tasks, and, if you let it, gets them done. Preorder the first wave for ₹999."
+    />
+    <meta property="og:title" content="LYZN — the pendant that follows through" />
+    <meta
+      property="og:description"
+      content="You talk. It follows through. Preorder the first wave for ₹999."
+    />
+    <meta property="og:image" content="/img/og.jpg" />
+    <meta property="og:type" content="product" />
+    <meta property="og:url" content="https://lyzn.ai/" />
+    <meta property="og:site_name" content="LYZN" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="LYZN — the pendant that follows through" />
+    <meta
+      name="twitter:description"
+      content="You talk. It follows through. Preorder the first wave for ₹999."
+    />
+    <meta name="twitter:image" content="/img/og.jpg" />
+
+    <script type="application/ld+json">
+      {"@context":"https://schema.org","@type":"Product","name":"LYZN Pendant","brand":{"@type":"Brand","name":"LYZN"},
+       "description":"An AI pendant that remembers your conversations, turns them into tasks, and, if you let it, gets them done.",
+       "image":"https://lyzn.ai/img/og.jpg","url":"https://lyzn.ai/",
+       "offers":[{"@type":"Offer","name":"Capture","price":"5999","priceCurrency":"INR","availability":"https://schema.org/PreOrder","url":"https://lyzn.ai/order?plan=capture"},
+                 {"@type":"Offer","name":"Act","price":"8999","priceCurrency":"INR","availability":"https://schema.org/PreOrder","url":"https://lyzn.ai/order?plan=act"},
+                 {"@type":"Offer","name":"Act Pro","price":"12999","priceCurrency":"INR","availability":"https://schema.org/PreOrder","url":"https://lyzn.ai/order?plan=act-pro"}]}
+    </script>
+
+    <!-- The hero's first frame. It is the largest thing painted and the
+         page is judged on it, so it is asked for before the stylesheet. -->
+    <link rel="preload" as="image" href="/img/poster-a.webp" type="image/webp" fetchpriority="high" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://checkout.razorpay.com" />
+    <!-- The two faces. The URL is written in at build time from
+         `fonts.google` in @lyzn/design — see googleFonts() in
+         vite.config.ts — so the weights that are fetched and the weights
+         the site sets are one list in one place. -->
+    <link href="%GOOGLE_FONTS%" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

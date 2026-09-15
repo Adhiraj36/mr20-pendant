@@ -1,0 +1,3 @@
+# The order flow uses real paths, so any unmatched route must serve the app
+# shell rather than 404. Without this a refresh on /order/details breaks.
+/*    /index.html   200

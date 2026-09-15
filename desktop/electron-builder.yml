@@ -1,0 +1,109 @@
+appId: ai.lyzn.daemon
+productName: LYZN Daemon
+copyright: Copyright © 2026 GHM Works Private Limited
+
+directories:
+  output: release
+  buildResources: build
+
+# Only the built output ships. The renderer and the Electron bundles are
+# self-contained, and there are no runtime node_modules to carry: everything is
+# bundled by esbuild and Vite, which is why `dependencies` is empty.
+files:
+  - dist/electron/**
+  - dist/renderer/**
+  - build/icon-*.png
+  - '!**/*.map'
+
+# The KARMAX daemon, built by scripts/build-core.sh. Unpacked rather than
+# inside the asar because it has to be executed, and asar-packed binaries
+# cannot be.
+extraResources:
+  - from: resources
+    to: core
+    filter:
+      # Per architecture, not `karmax-*`. That glob put every binary into every
+      # build, so an x64 DMG shipped an arm64 daemon and an Intel Mac would
+      # have installed an app that could not start — daemonBinary() looks for
+      # karmax-darwin-x64 by name and finds nothing. scripts/check-core.mjs
+      # fails the build if this ever slips again.
+      - 'karmax-*-${arch}*'
+      - 'core.json'
+  # The loop that is the LYZN integration. Shipped rather than fetched: signing
+  # in should not need a round trip to a third place, and a change in a
+  # registry nobody here controls should not alter what runs on somebody's
+  # machine.
+  - from: resources/loops
+    to: loops
+    filter:
+      - '*.yaml'
+
+afterPack: scripts/check-core.mjs
+
+asar: true
+
+# One name per platform, and the version is not in it.
+#
+# The website links straight at these files — lyzn.ai/downloads/<name> — so
+# the name has to be the same for every release or the page would need
+# editing each time one is cut. What version a download is comes from
+# `downloads/latest.json`, which the release workflow writes beside them, and
+# from the app itself once it is open. Every build is also kept under
+# `downloads/v<version>/` with the same names, so an older one is still
+# reachable when a new one is wrong.
+linux:
+  artifactName: LYZN-Daemon-linux-x64.AppImage
+  # AppImage only, for now. A .deb has to name a maintainer — a real person at
+  # a real address, which is what a Debian user is entitled to when something
+  # they installed misbehaves — and LYZN has not published one yet; the site's
+  # own contact slot is still empty. An invented address in a package people
+  # install is worse than a format they have to chmod +x. Add `deb` back the
+  # day there is an address, alongside `maintainer:` here.
+  target:
+    - target: AppImage
+      arch: [x64]
+  category: Utility
+  icon: build/icon.png
+  synopsis: The LYZN daemon, on your own machine
+  description: >-
+    LYZN hears the promises you make and writes them down. This is the half
+    that keeps them: it runs on your own machine, does the work you approved
+    in the LYZN app, and posts back a receipt for each one.
+
+mac:
+  # Dictation, built by scripts/build-dictate.sh. Its own bundle, because macOS
+  # grants the microphone and speech recognition to a bundle, not to a binary.
+  extraResources:
+    - from: resources/dictate
+      to: dictate
+  # `${arch}` here, unlike the other two: this is the one platform that
+  # builds more than one, and two targets sharing a name would overwrite
+  # each other.
+  artifactName: LYZN-Daemon-mac-${arch}.dmg
+  # Two dmgs rather than one universal build. A universal app is two copies of
+  # Electron merged, and the merge is the step that fails at four in the
+  # morning; two files that each say which Mac they are for cost 90 MB of
+  # bandwidth and no debugging.
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+  category: public.app-category.productivity
+  icon: build/icon.png
+  # The daemon holds long-lived network listeners on loopback and spawns the
+  # coding harness, so the hardened runtime needs both exceptions.
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+win:
+  artifactName: LYZN-Daemon-windows-x64.exe
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.png
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true

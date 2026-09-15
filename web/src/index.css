@@ -1,0 +1,1178 @@
+@import 'tailwindcss';
+/* @import rules must precede every other rule, so the token import sits
+   here rather than down by the "LYZN — the visual system" comment that
+   explains it — @font-face below would otherwise make this import invalid
+   CSS and get it silently dropped. */
+@import '@lyzn/design/tokens.css';
+
+/* ─────────────────────────────────────────────────────────────
+   Fallback faces, measured rather than guessed.
+
+   Archivo and Martian Mono arrive from a font service, and until they do
+   the page is set in whatever the system has. If that face is a different
+   width, every line re-wraps when the real one lands — which on a page of
+   6.5rem headlines is a large, visible lurch, and was measured at 0.26
+   cumulative layout shift under the previous faces.
+
+   These are the local fallbacks scaled to the real faces' advance widths,
+   so the swap changes the shapes and not the metrics. The numbers come
+   from measuring one string at 100px in each face in the browser
+   (canvas measureText, "The quick brown fox … 0123456789"):
+
+     Archivo ÷ Helvetica Neue   = 0.9744
+     Archivo ÷ Arial            = 0.9846
+     Martian Mono ÷ Menlo       = 1.1627
+
+   Martian Mono is a wide face — a sixth wider than Menlo — which is why
+   the mono fallback is scaled up rather than down. Re-measure if the
+   typeface changes.
+   ───────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Archivo Fallback';
+  src: local('Helvetica Neue'), local('HelveticaNeue');
+  size-adjust: 97.44%;
+  ascent-override: 92%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Archivo Fallback Arial';
+  src: local('Arial'), local('Liberation Sans');
+  size-adjust: 98.46%;
+  ascent-override: 92%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Martian Mono Fallback';
+  src: local('Menlo'), local('Consolas'), local('DejaVu Sans Mono');
+  size-adjust: 116.27%;
+  ascent-override: 95%;
+  descent-override: 24%;
+  line-gap-override: 0%;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   LYZN — the visual system
+
+   Warm monochrome. Two grounds, ink and paper, and one signal
+   colour that never appears larger than a dot or a hairline.
+   Every component reads its foreground, lines and panels from
+   the tone variables, so one component works on both grounds.
+
+   The @theme block itself is generated from @lyzn/design/src/tokens.ts —
+   the app reads the same numbers directly — so there is one source for
+   both platforms instead of a CSS copy that drifts from the TS original.
+   Run `npm run gen:css` in packages/design after changing a token. The
+   import lives at the top of this file — see the comment there.
+
+   Spec: docs/superpowers/specs/2026-09-04-lyzn-website-design.md §5
+   ───────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────
+   Tone. A section declares its ground; everything inside reads
+   its colours from these six variables and needs no variant.
+   ───────────────────────────────────────────────────────────── */
+
+/* The inverse pair has lost its hover partner: --tone-inv-hover was read by
+   one rule, the primary button's hover, which lightened the fill. Every
+   button fills with the stamp now, and the stamp is one blue on both
+   grounds — so the variable had no reader left. */
+.on-ink,
+.on-charcoal,
+.on-void {
+  --tone-fg: var(--color-fg);
+  --tone-muted: var(--color-fg-muted);
+  --tone-faint: var(--color-fg-faint);
+  --tone-line: rgba(237, 234, 228, 0.1);
+  --tone-line-2: rgba(237, 234, 228, 0.22);
+  --tone-panel: var(--color-graphite);
+  --tone-panel-2: var(--color-graphite-2);
+  --tone-inv-bg: var(--color-fg);
+  --tone-inv-fg: var(--color-ink);
+}
+.on-ink {
+  --tone-bg: var(--color-ink);
+}
+.on-charcoal {
+  --tone-bg: var(--color-charcoal);
+}
+.on-void {
+  --tone-bg: var(--color-void);
+}
+
+.on-paper,
+.on-paper-2 {
+  --tone-fg: var(--color-inkfg);
+  --tone-muted: var(--color-inkmuted);
+  --tone-faint: var(--color-inkfaint);
+  --tone-line: rgba(20, 20, 22, 0.1);
+  --tone-line-2: rgba(20, 20, 22, 0.24);
+  /* A sheet lying on the desk. The page ground is the desk now (see the
+     body rule below), so a panel is brighter than what it sits on rather
+     than a step darker — the package's `sheet`, which is the same white
+     the pricing section's receipt and tier cards are printed on. The
+     second panel is the paper this site used to be printed on. */
+  --tone-panel: var(--color-sheet);
+  --tone-panel-2: var(--color-paper);
+  --tone-inv-bg: var(--color-inkfg);
+  --tone-inv-fg: var(--color-paper);
+}
+.on-paper {
+  --tone-bg: var(--color-paper);
+}
+/* The second light ground. Two papers half a step apart do on a light page
+   what ink and charcoal did on a dark one: separate one section from the
+   next without a rule between them. A panel sitting on it steps down again,
+   so a card never matches the section it is on. */
+.on-paper-2 {
+  --tone-bg: var(--color-paper-2);
+  --tone-panel: var(--color-paper-3);
+  --tone-panel-2: var(--color-paper-2);
+}
+
+@theme inline {
+  --color-tone-bg: var(--tone-bg);
+  --color-tone: var(--tone-fg);
+  --color-tone-muted: var(--tone-muted);
+  --color-tone-faint: var(--tone-faint);
+  --color-tone-line: var(--tone-line);
+  --color-tone-line-2: var(--tone-line-2);
+  --color-tone-panel: var(--tone-panel);
+  --color-tone-panel-2: var(--tone-panel-2);
+  --color-tone-inv-bg: var(--tone-inv-bg);
+  --color-tone-inv-fg: var(--tone-inv-fg);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Ink. The reader picks the colour the headings are set in; the
+   picker sets one attribute on <html>, `[data-ink="…"]` sets
+   --heading, and the h1, h2, h3 rule below reads it.
+
+   The rules themselves are not here: they are generated from
+   `inks` in @lyzn/design and arrive with the token import at the
+   top of this file. The six hexes have one owner now, and it is
+   not this file — see web/src/lib/ink.ts, which reads the same
+   list for the picker.
+
+   The default ink has no rule: it removes the attribute instead,
+   so --heading goes undefined and every heading falls back to the
+   tone it would have had if none of this existed.
+   ───────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────
+   Base
+   ───────────────────────────────────────────────────────────── */
+
+@layer base {
+  :root {
+    color-scheme: light;
+
+    /* One percent of the *small* viewport — the height the screen has while
+       the browser's own bars are showing.
+
+       iOS Safari collapses those bars as you scroll, which grows `vh` by
+       about sixty pixels partway down the page. A frame pinned at `100vh`
+       is then re-laid-out mid-scroll while `pinProgress` is still dividing
+       by the old height, and the scene jumps. `svh` is the collapsed-bars
+       height and never moves, so every pinned frame and every scroll runway
+       on this site is measured in this unit — and `viewport().h` in
+       lib/scroll.ts measures itself against the same one, so the frame and
+       the progress that scrubs it can never disagree.
+
+       On every other browser, and on any browser too old to know `svh`,
+       this is exactly `1vh` and nothing changes. */
+    --svh: 1vh;
+  }
+
+  @supports (height: 1svh) {
+    :root {
+      --svh: 1svh;
+    }
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* The nav is 64px; an anchored section must not start under it. */
+    scroll-padding-top: 64px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* The one thing the ink picker touches. Headings only — a heading is the
+     line the page is announced in, and the rest of the page stays the ink
+     it was printed in. The fallback is what a heading was before the
+     picker existed, so a page with no ink chosen is unchanged.
+
+     This is a base rule, so a `text-*` utility on an h1 would win and that
+     heading would never take the ink. Colour a heading by leaving it
+     alone. */
+  h1,
+  h2,
+  h3 {
+    color: var(--heading, var(--tone-fg));
+    transition: color 180ms linear;
+  }
+
+  /* Archivo 800, as the reference sets every heading on the page. Each
+     level takes the weight of the display size it is the heading for, so
+     an h2 given .display-l and an h2 given nothing are set the same — the
+     display classes below repeat these because a heading given one of them
+     is the same heading; these rules are for the ones that are not. */
+  h1 {
+    font-weight: var(--type-display-xl-weight);
+  }
+  h2 {
+    font-weight: var(--type-display-l-weight);
+  }
+  h3 {
+    font-weight: var(--type-display-m-weight);
+  }
+
+  body {
+    margin: 0;
+    /* The desk. One ground under the whole site — the reference's colour,
+       unruled — and every section is transparent over it, so the page is
+       a single surface with sheets of paper on it rather than a stack of
+       bands that happen to abut. Nothing else paints a full-width colour,
+       the pricing section and the footer included. */
+    background-color: var(--color-desk);
+    color: var(--color-inkfg);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: var(--color-signal);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 3px;
+    /* Square, like everything it lands on. A rounded ring around a square
+       control reads as the ring belonging to something else. */
+    border-radius: 0;
+  }
+
+  /* The one blunt instrument. Every section also resolves its own
+     reduced-motion end state in JS, so this is only a backstop. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Type scale (§5.2)
+   ───────────────────────────────────────────────────────────── */
+
+@layer components {
+  /* The three display sizes, and every number in them is `typeScale` in
+     @lyzn/design — Archivo 800 pulled tight and set close, which is the
+     reference's fit for a heading. A heading is the loudest thing on a
+     page of 11px mono labels, and at 500 it was not louder than the
+     receipts beside it. .display-xl takes the fit of the reference's
+     .intro h1, .display-l that of its .sec h2.
+
+     The clamps, and the lower floor XL takes on a phone, are the
+     generator's — see the note in packages/design/scripts/gen-css.mjs.
+     Only `text-wrap` is the site's own: it is a wrapping instruction and
+     not part of the scale. */
+  .display-xl {
+    font-size: var(--type-display-xl-size);
+    font-weight: var(--type-display-xl-weight);
+    letter-spacing: var(--type-display-xl-tracking);
+    line-height: var(--type-display-xl-leading);
+    text-wrap: balance;
+  }
+
+  .display-l {
+    font-size: var(--type-display-l-size);
+    font-weight: var(--type-display-l-weight);
+    letter-spacing: var(--type-display-l-tracking);
+    line-height: var(--type-display-l-leading);
+    text-wrap: balance;
+  }
+
+  /* The smallest of the three keeps its own tracking: it lands at 24px,
+     where the display sizes' −0.038em closes the counters up. */
+  .display-m {
+    font-size: var(--type-display-m-size);
+    font-weight: var(--type-display-m-weight);
+    letter-spacing: var(--type-display-m-tracking);
+    line-height: var(--type-display-m-leading);
+    text-wrap: balance;
+  }
+
+  .body-l {
+    font-size: clamp(1.125rem, 1.4vw, 1.25rem);
+    font-weight: 400;
+    letter-spacing: -0.005em;
+    line-height: 1.5;
+  }
+
+  .label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  .label-sm {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  /* The wordmark, in the bar and in the footer: the reference's .mark. It
+     is set in the same face and tracking as the buttons beside it, half a
+     step larger — the name is a stamp too. Colour is left to the element,
+     so it takes the tone of whatever it is printed on. */
+  .mark {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    line-height: 1;
+    text-decoration: none;
+  }
+
+  .price {
+    font-size: clamp(1.5rem, 2.6vw, 2.25rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Layout ── */
+  .shell {
+    width: 100%;
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: 24px;
+  }
+  @media (min-width: 640px) {
+    .shell {
+      padding-inline: 40px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .shell {
+      padding-inline: 64px;
+    }
+  }
+
+  .section-pad {
+    padding-block: clamp(96px, 14vh, 160px);
+  }
+
+  /* A pinned frame that fills whatever screen the reader has right now.
+     `--svh` is the height with the browser's bars showing and never moves;
+     a frame that tall leaves the bars' worth of bare desk under itself the
+     moment they collapse. `dvh` is the current height, bars or no bars, and
+     is never smaller than `svh`. Only for a frame whose content hangs from
+     its top and bottom edges — anything centred in it would drift as the
+     bars animate. The first line is the fallback for a browser without
+     `dvh`. */
+  .pin-frame-fill {
+    height: calc(100 * var(--svh));
+    height: 100dvh;
+  }
+
+  /* ── The button (the reference's .btn) ──
+     One button, one size, one face: Martian Mono at 11px/700 with a tenth
+     of an em of tracking, uppercase, square, ink on paper, and the stamp's
+     blue under the pointer. It is the same object as the wordmark and the
+     labels — the site is set in two faces, and the button is not a third.
+
+     The three variants no longer differ in type, only in how much of the
+     stamp is inked: primary is filled, secondary is the outline of the
+     same shape, ghost is the type on its own. Every one of them fills
+     with the stamp on hover, which is the reference's whole hover state.
+
+     The face, the size, the tracking, the paddings and the hover pair are
+     `button` in @lyzn/design. The resting fill is not: --btn-fill and
+     --btn-ink are that button as it is printed on paper, and the site
+     prints it on the ink grounds too, so it takes the tone's inversion
+     and comes out the right way round on either. On paper the two agree. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: var(--btn-pad-y) var(--btn-pad-x);
+    /* Square. The site's one hard edge: every button is a stamp, not a pill. */
+    border-radius: 0;
+    border: none;
+    font-family: var(--font-mono);
+    font-size: var(--btn-size);
+    font-weight: var(--btn-weight);
+    letter-spacing: var(--btn-tracking);
+    line-height: 1;
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+    cursor: pointer;
+    background: var(--tone-inv-bg);
+    color: var(--tone-inv-fg);
+    transition:
+      background-color var(--dur-ui) var(--ease-out),
+      box-shadow var(--dur-ui) var(--ease-out),
+      color var(--dur-ui) var(--ease-out),
+      transform var(--dur-micro) var(--ease-out);
+  }
+  .btn:hover:not(:disabled) {
+    background: var(--btn-hover);
+    color: var(--btn-hover-ink);
+  }
+  .btn:active:not(:disabled) {
+    transform: scale(0.985);
+  }
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* The reference narrows the button below 900px. Same button, less air —
+     which is why it is here and not on a variant. It sits above the
+     variants so that the two that set their own padding keep it.
+
+     Less air is the compact pair, so it is the compact pair it reads.
+     The half-pixel off the type is the one number of the button the
+     package does not hold: it is this breakpoint's, not the button's. */
+  @media (max-width: 900px) {
+    .btn {
+      padding: var(--btn-pad-y-compact) var(--btn-pad-x-compact);
+      font-size: 10.5px;
+    }
+  }
+
+  /* Filled: what .btn already is. The class stays so that nothing has to
+     change where a button is asked for by name. */
+  .btn-primary {
+    background: var(--tone-inv-bg);
+    color: var(--tone-inv-fg);
+  }
+
+  /* The stamp, not yet inked: the 1.5px rule the reference gives its
+     fields, drawn inside the box so the button occupies the same space
+     filled or not. */
+  .btn-secondary {
+    background: transparent;
+    color: var(--tone-fg);
+    box-shadow: inset 0 0 0 1.5px var(--tone-fg);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    box-shadow: inset 0 0 0 1.5px var(--btn-hover);
+  }
+
+  /* Borderless, and nothing filled: the same type set beside the button it
+     defers to. The stamp arrives in the letters instead of behind them. */
+  .btn-ghost {
+    background: transparent;
+    color: var(--tone-muted);
+    padding: 12px 4px;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background: transparent;
+    color: var(--btn-hover);
+  }
+
+  .btn-compact {
+    padding: var(--btn-pad-y-compact) var(--btn-pad-x-compact);
+    font-size: 10.5px;
+  }
+
+  .btn-full {
+    width: 100%;
+  }
+
+  /* ── Surfaces ── */
+  .panel {
+    background: var(--tone-panel);
+    border: 1px solid var(--tone-line);
+    border-radius: 20px;
+  }
+
+  .hair {
+    border-color: var(--tone-line);
+  }
+
+  /* ── Form controls ── */
+  .control {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: 48px;
+    padding-inline: 14px;
+    /* Square, like the buttons. A field is a control, not a pill. */
+    border-radius: 0;
+    border: 1px solid var(--tone-line-2);
+    background: var(--tone-panel);
+    color: var(--tone-fg);
+    font-size: 0.95rem;
+    font-family: inherit;
+    outline: none;
+    transition:
+      border-color var(--dur-ui) var(--ease-out),
+      background-color var(--dur-ui) var(--ease-out);
+  }
+  .control::placeholder {
+    color: var(--tone-faint);
+  }
+  .control:hover {
+    border-color: var(--tone-fg);
+  }
+  .control:focus-visible {
+    border-color: var(--color-signal);
+  }
+  .control[aria-invalid='true'] {
+    border-color: var(--color-danger);
+  }
+
+
+  /* ── The receipt (§ proof of work) ──────────────────────────
+     A thermal slip, and it is always a slip: it carries its own
+     paper and its own ink whatever ground it is dropped onto, so
+     the same component works on the hero's ink and the pricing
+     section's paper without a variant.
+
+     The scalloped edge is a three-layer mask — a row of circles
+     bitten out of the top, another out of the bottom, and a solid
+     block for everything between. Doing it with a mask rather than
+     painted notches is what lets the ground show through the
+     bites instead of a guessed background colour. */
+  .receipt {
+    --paper: #fbfaf6;
+    --ink: #16181a;
+    --faint: #8a8880;
+    /* Measured off a real slip rather than guessed.
+
+       The edge is a row of tangent semicircular bites hanging into the
+       paper, with a sharp cusp where each pair meets. Zoomed, the reference
+       is unmistakable: twelve domes of background across 283px of an
+       809-wide slip, each one a full half-disc as wide as the pitch. So
+       radius = pitch / 2, and there is no flat run between them.
+
+       The reference mock is a 2x export, so its 24px period is 12 CSS px —
+       at which size the cusps between bites are barely a pixel wide and
+       antialias away to a faint serration. Measured, a faithful 12px pitch
+       cut only 2px deep on screen against the reference's 11. So the bite
+       here is deliberately coarser than the mock: big enough that the
+       scallop reads as a torn edge at 1x as well as on a retina screen.
+
+       The bite is the half-disc *below* a centre sitting ON the paper's
+       edge. Putting that centre at the far side of the tile instead — which
+       is what the first two attempts did — inverts the dome into a spike,
+       and the whole edge reads as a saw blade. Hence `circle at 50% 0` for
+       the top edge and `50% 100%` for the bottom: in each case the centre
+       is on the edge being cut, not across the tile from it. */
+    --bite: 8px;
+
+    position: relative;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    padding: 26px 22px 20px;
+    /* A drop-shadow filter, not a box-shadow: masking applies to the whole
+       of an element's painting, so a box-shadow is cut away with everything
+       else outside the mask. `drop-shadow` is derived from the resulting
+       alpha, so it follows the scalloped silhouette — which is the only way
+       the slip separates from the paper section, where it is barely two
+       shades lighter than the ground behind it. */
+    filter: drop-shadow(0 10px 16px rgba(20, 20, 22, 0.16));
+
+    mask:
+      radial-gradient(circle at 50% 0, #0000 var(--bite), #000 calc(var(--bite) + 0.6px)) 50% 0 /
+        calc(var(--bite) * 2) var(--bite) repeat-x,
+      radial-gradient(circle at 50% 100%, #0000 var(--bite), #000 calc(var(--bite) + 0.6px)) 50%
+        100% / calc(var(--bite) * 2) var(--bite) repeat-x,
+      linear-gradient(#000 0 0) 50% 50% / 100% calc(100% - var(--bite) * 2) no-repeat;
+  }
+
+  /* A row: label, a dotted leader that takes up the slack, value.
+     The leader is a border on a flex spacer rather than a string of
+     dots, so it lands on the baseline at any width. */
+  .r-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    line-height: 1.9;
+  }
+  .r-row > .lead {
+    flex: 1;
+    border-bottom: 1px dotted color-mix(in srgb, var(--ink) 30%, transparent);
+    transform: translateY(-4px);
+  }
+  .r-key {
+    color: color-mix(in srgb, var(--ink) 72%, transparent);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .r-val {
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* A cut across the slip. */
+  .r-cut {
+    border-top: 1px dashed color-mix(in srgb, var(--ink) 26%, transparent);
+  }
+
+  /* The rubber stamp. Ink rather than a second colour: the site has
+     one accent and a stamp is far larger than a dot. It reads as a
+     stamp through the angle and the double rule, not through hue. */
+  .r-stamp {
+    position: absolute;
+    right: 14px;
+    padding: 5px 10px;
+    border: 2px solid color-mix(in srgb, var(--ink) 62%, transparent);
+    border-radius: 3px;
+    color: color-mix(in srgb, var(--ink) 70%, transparent);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    transform: rotate(-7deg);
+    white-space: nowrap;
+  }
+
+  /* A slip on a desk: its own angle, and its own rate of travel as the
+     section it lives in crosses the viewport. `--d` runs −1 → 1 and is
+     written by the section once per frame. */
+  .drift {
+    transform: translateY(calc(var(--d, 0) * var(--rate, 12) * -1px)) rotate(var(--tilt, 0deg));
+    will-change: transform;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .drift {
+      transform: rotate(var(--tilt, 0deg));
+    }
+  }
+
+  /* ── Links in running text ── */
+  .link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--tone-line-2);
+    text-underline-offset: 5px;
+    transition: text-decoration-color var(--dur-ui) var(--ease-out);
+  }
+  .link:hover {
+    text-decoration-color: currentColor;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Scrub. Scroll-driven sections write a 0 → 1 progress into
+   --p on their own element each frame; the CSS below reads it.
+   No React re-render is involved in anything continuous.
+   ───────────────────────────────────────────────────────────── */
+
+@layer components {
+  /* Items counted in one at a time. The parent writes the counter
+     (--reveal, --tasks, --status) once a frame; each child knows its own
+     index, so no element is ever re-rendered to make this move. */
+  .count-word {
+    opacity: clamp(0, calc(var(--reveal, 999) - var(--i)), 1);
+    transition: opacity 200ms var(--ease-out);
+  }
+
+  .count-task {
+    opacity: clamp(0, calc(var(--tasks, 999) - var(--i)), 1);
+    transform: translateY(calc((1 - clamp(0, calc(var(--tasks, 999) - var(--i)), 1)) * -12px));
+    transition:
+      opacity 300ms var(--ease-out),
+      transform 300ms var(--ease-out);
+  }
+
+  .count-status {
+    opacity: clamp(0, calc(var(--status, 999) - var(--i)), 1);
+    transform: translateX(calc((1 - clamp(0, calc(var(--status, 999) - var(--i)), 1)) * -6px));
+    transition:
+      opacity 300ms var(--ease-out),
+      transform 300ms var(--ease-out);
+  }
+
+  /* The phone's page, scrolled by the station: see PhoneFrame. */
+  .phone-page {
+    transform: translateY(calc(var(--phone-over, 0px) * var(--phone-scroll, 0) * -1));
+  }
+
+  .count-line {
+    opacity: clamp(0, calc(var(--lines, 999) - var(--i)), 1);
+    transform: translateY(calc((1 - clamp(0, calc(var(--lines, 999) - var(--i)), 1)) * 6px));
+    transition:
+      opacity 240ms var(--ease-out),
+      transform 240ms var(--ease-out);
+  }
+
+  /* The underline that draws itself under the words a task came from. */
+  .sweep {
+    background-image: linear-gradient(var(--color-signal), var(--color-signal));
+    background-size: calc(var(--sweep, 1) * 100%) 1px;
+    background-position: 0 1.15em;
+    background-repeat: no-repeat;
+  }
+
+  /* The vertical rule in the differentiator, drawn downward. */
+  .rule-draw {
+    background: linear-gradient(var(--tone-line-2), var(--tone-line-2)) no-repeat;
+    background-size: 1px calc(var(--rule, 1) * 100%);
+  }
+
+  /* ── The hero, scrubbed by its own sticky progress ──
+     The headline leaves as the camera moves in, and the material caption
+     arrives as the glass fills the frame. Both read --p off the sticky
+     element, which the section writes once a frame. */
+  .hero-lede {
+    opacity: clamp(0, calc((0.25 - var(--p, 0)) / 0.25), 1);
+    transform: translateY(calc(clamp(0, calc(var(--p, 0) / 0.25), 1) * -24px));
+  }
+
+  /* In over the close-up, out again before the pendant leaves for the next
+     section — the caption describes the glass, and it should not still be
+     on screen once the glass has gone. */
+  .hero-caption {
+    opacity: min(
+      clamp(0, calc((var(--p, 0) - 0.42) / 0.14), 1),
+      clamp(0, calc((0.86 - var(--p, 0)) / 0.1), 1)
+    );
+    transform: translateY(calc((1 - clamp(0, calc((var(--p, 0) - 0.42) / 0.14), 1)) * 8px));
+  }
+
+  /* ── Slips of receipt paper, in flight ──
+     A torn top and bottom, cut rather than drawn, so the edge scales with
+     the slip as it shrinks in the air. */
+  .slip {
+    clip-path: polygon(
+      0 6px, 4% 0, 8% 6px, 12% 0, 16% 6px, 20% 0, 24% 6px, 28% 0, 32% 6px, 36% 0,
+      40% 6px, 44% 0, 48% 6px, 52% 0, 56% 6px, 60% 0, 64% 6px, 68% 0, 72% 6px, 76% 0,
+      80% 6px, 84% 0, 88% 6px, 92% 0, 96% 6px, 100% 0,
+      100% calc(100% - 6px), 96% 100%, 92% calc(100% - 6px), 88% 100%, 84% calc(100% - 6px),
+      80% 100%, 76% calc(100% - 6px), 72% 100%, 68% calc(100% - 6px), 64% 100%,
+      60% calc(100% - 6px), 56% 100%, 52% calc(100% - 6px), 48% 100%, 44% calc(100% - 6px),
+      40% 100%, 36% calc(100% - 6px), 32% 100%, 28% calc(100% - 6px), 24% 100%,
+      20% calc(100% - 6px), 16% 100%, 12% calc(100% - 6px), 8% 100%, 4% calc(100% - 6px), 0 100%
+    );
+    box-shadow: 0 8px 24px -8px rgba(20, 20, 22, 0.28);
+  }
+
+  /* ── The laptop reading its own screen ──
+     One hairline sweeping down the status block as the lines come in.
+     --scan is written by the scene; at 0 and 1 it is off the block. */
+  .laptop-scan {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(var(--scan, 0) * 100%);
+    height: 1px;
+    background: var(--color-signal);
+    opacity: calc(var(--scan, 0) * (1 - var(--scan, 0)) * 4);
+    pointer-events: none;
+  }
+
+  /* ── The person in the story, talking ──
+     Flipped by the scene while the line is being spoken. Only the lower
+     lip and two arcs move: enough to read as speech, not enough to read as
+     a cartoon. Driven by a data attribute the scroll frame writes, so the
+     figure never re-renders. */
+  [data-talking='true'] .person .lip {
+    animation: talk-lip 0.44s ease-in-out infinite;
+  }
+  [data-talking='true'] .person .arc-1 {
+    animation: talk-arc 1.15s ease-out infinite;
+  }
+  [data-talking='true'] .person .arc-2 {
+    animation: talk-arc 1.15s ease-out 0.38s infinite;
+  }
+  .person .arc {
+    opacity: 0;
+    transform-origin: 350px 230px;
+  }
+
+  @keyframes talk-lip {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    28% {
+      transform: translateY(4.5px);
+    }
+    52% {
+      transform: translateY(1.5px);
+    }
+    78% {
+      transform: translateY(3.5px);
+    }
+  }
+  @keyframes talk-arc {
+    0% {
+      opacity: 0;
+      transform: scale(0.82);
+    }
+    30% {
+      opacity: 0.85;
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.18);
+    }
+  }
+
+  .hero-cue {
+    opacity: clamp(0, calc((0.02 - var(--p, 0)) / 0.02), 1);
+  }
+
+  /* ── The differentiator, scrubbed by its pin ──
+     One progress value in, seven derived out. Each sub-range is written
+     here rather than in the component so the choreography of the section
+     can be read in one place and adjusted without touching the markup.
+     Ranges follow spec §2.5. */
+  .act {
+    --appear-2: clamp(0, calc((var(--p, 1) - 0.15) / 0.1), 1);
+    --shrink: clamp(0, calc((var(--p, 1) - 0.35) / 0.2), 1);
+    --s1: clamp(0, calc((var(--p, 1) - 0.35) / 0.08), 1);
+    --s2: clamp(0, calc((var(--p, 1) - 0.5) / 0.08), 1);
+    --s3: clamp(0, calc((var(--p, 1) - 0.65) / 0.08), 1);
+    --s4: clamp(0, calc((var(--p, 1) - 0.9) / 0.06), 1);
+    --rule: clamp(0, calc((var(--p, 1) - 0.35) / 0.5), 1);
+    --status: calc(clamp(0, calc((var(--p, 1) - 0.65) / 0.2), 1) * 3);
+    --footer: clamp(0, calc((var(--p, 1) - 0.92) / 0.05), 1);
+  }
+
+  .act .act-line-two {
+    opacity: var(--appear-2);
+    transform: translateY(calc((1 - var(--appear-2)) * 12px));
+  }
+
+  /* The statement hands over to the demonstration: it steps back and the
+     sequence takes the middle of the screen. */
+  .act .act-head {
+    transform-origin: left center;
+    transform: scale(calc(1 - var(--shrink) * 0.42));
+  }
+
+  .act .act-body,
+  .act .act-footer {
+    transform: translateY(calc(var(--shrink) * -7vh));
+  }
+
+  .act .act-step-1 {
+    opacity: var(--s1);
+  }
+  .act .act-step-2 {
+    opacity: var(--s2);
+  }
+  .act .act-step-3 {
+    opacity: var(--s3);
+  }
+  .act .act-step-4 {
+    opacity: var(--s4);
+  }
+  .act .act-footer {
+    opacity: var(--footer);
+  }
+
+  /* Every scrubbed element resolves to its finished state for anyone who
+     has asked for less motion. Nothing is left mid-transition, and nothing
+     that carries meaning is left invisible. */
+  @media (prefers-reduced-motion: reduce) {
+    .count-word,
+    .count-task,
+    .count-status,
+    .count-line,
+    .hero-lede,
+    .hero-caption {
+      opacity: 1;
+      transform: none;
+    }
+    .hero-cue {
+      opacity: 0;
+    }
+    .sweep {
+      background-size: 100% 1px;
+    }
+    .act .act-head,
+    .act .act-body,
+    .act .act-footer,
+    .act .act-line-two {
+      transform: none;
+      opacity: 1;
+    }
+    .act .act-step-1,
+    .act .act-step-2,
+    .act .act-step-3,
+    .act .act-step-4 {
+      opacity: 1;
+    }
+    .rule-draw {
+      background-size: 1px 100%;
+    }
+  }
+}
+
+@layer components {
+  /* The still pendant the story section falls back to. Shown when the
+     canvas never arrived — which on a phone is most of the time, because
+     `useCanRender3D` refuses four cores or four gigabytes.
+
+     It used to be shown on every phone unconditionally, because the model
+     was hidden for the whole story there. It rides the portrait scene now,
+     so a phone that *can* run the canvas would otherwise wear two
+     pendants. One rule for both rigs: the still stands in when, and only
+     when, there is no model to stand in for. */
+  .only-poster {
+    display: none;
+  }
+  html[data-3d='poster'] .only-poster {
+    display: block;
+  }
+}
+
+@layer components {
+  /* ── The ink picker (§ web/src/lib/ink.ts) ──
+
+     Two rows of the same six squares: one in the header that gets out of
+     the way once you have chosen, one in the footer that never does. The
+     picker paints nothing itself — it sets `data-ink` on <html> and the
+     generated `[data-ink]` block does the rest. */
+
+  /* Mirrors the compact button's height in the nav, so the row and the
+     Preorder button beside it are one band. Change it here if that
+     button changes. */
+  :root {
+    --ink-sw: 40px;
+  }
+
+  /* ── The mark's ellipsis, which is the picker ──
+     The site bar has no row of squares in it. It has the wordmark, and the
+     wordmark's dots are the six inks: at rest they are the mark's own
+     periods — same face, same tracking, same advance, so what the bar shows
+     is a wordmark and not a control dressed as one — and a pointer anywhere
+     on the mark turns each one into the colour it sets.
+
+     The swatch is painted over the period rather than in place of it, so
+     the mark is exactly as wide revealed as hidden and nothing in the bar
+     moves. The footer keeps the labelled row, which is where somebody who
+     wants to change the ink on purpose goes. */
+  .mark-ink {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .mark-name {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .mark-row {
+    display: inline-flex;
+    align-items: center;
+    /* A hair, so the first swatch's ring clears the N. At the mark's size
+       this is invisible in the resting ellipsis. */
+    margin-left: 1px;
+  }
+
+  .mark-dot {
+    position: relative;
+    display: inline-block;
+    padding: 0;
+    border: none;
+    background: none;
+    /* The mark's type, so the period inside is the mark's period. */
+    font: inherit;
+    letter-spacing: inherit;
+    line-height: inherit;
+    color: inherit;
+    /* Nothing to press until there is something to see. */
+    cursor: default;
+  }
+
+  .mark-dot > span {
+    transition: opacity 160ms var(--ease-out);
+  }
+
+  .mark-dot::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    /* Sized to the period's own advance: seven across an advance of about
+       ten and a half leaves room either side for the chosen one's ring
+       without any two of them touching. */
+    width: 7px;
+    height: 7px;
+    margin: -3.5px 0 0 -3.5px;
+    /* Square, like every other swatch on the site. */
+    background: var(--sw);
+    opacity: 0;
+    transition: opacity 160ms var(--ease-out);
+    pointer-events: none;
+  }
+
+  .mark-ink:hover .mark-dot,
+  .mark-ink:focus-within .mark-dot {
+    cursor: pointer;
+  }
+  .mark-ink:hover .mark-dot > span,
+  .mark-ink:focus-within .mark-dot > span {
+    opacity: 0;
+  }
+  .mark-ink:hover .mark-dot::after,
+  .mark-ink:focus-within .mark-dot::after {
+    opacity: 1;
+  }
+
+  /* The one that is lit, once there is anything to see. */
+  .mark-ink:hover .mark-dot[aria-checked='true']::after,
+  .mark-ink:focus-within .mark-dot[aria-checked='true']::after {
+    /* The footer row's ring, at the mark's scale: a gap in the ground
+       colour, then the ink. Thinner here because six of these live inside
+       the width of six periods. */
+    box-shadow:
+      0 0 0 1px var(--tone-bg),
+      0 0 0 2px var(--sw);
+  }
+
+  .mark-dot:focus-visible {
+    outline-offset: 3px;
+  }
+
+  /* No pointer, no easter egg. A tap on the logo of a page being read on a
+     phone should not repaint its headings, and that reader has the labelled
+     row in the menu and in the footer. */
+  @media (hover: none) {
+    .mark-dot {
+      pointer-events: none;
+    }
+  }
+
+  .ink-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    transition:
+      opacity 240ms linear,
+      width 240ms linear,
+      gap 240ms linear;
+  }
+
+  .ink-dot {
+    width: var(--ink-sw);
+    height: var(--ink-sw);
+    flex: none;
+    padding: 0;
+    border: none;
+    /* Square. Six colours in a row is already a lot of shape; rounding
+       them would make it a lot of shape and a toy. */
+    border-radius: 0;
+    background: var(--sw);
+    cursor: pointer;
+    transition:
+      opacity 240ms linear,
+      width 240ms linear,
+      margin 240ms linear,
+      box-shadow 120ms linear;
+  }
+
+  /* The chosen one wears a double ring: a gap in the ground it sits on,
+     then the ink again. Reading the ground from --tone-bg is what lets the
+     same dot work in the header's paper and the footer's second paper. */
+  .ink-dot[aria-checked='true'] {
+    box-shadow:
+      0 0 0 2px var(--tone-bg),
+      0 0 0 3px var(--sw);
+  }
+
+  .ink-dot:focus-visible {
+    /* Clear of the checked ring, so the two never touch. */
+    outline-offset: 4px;
+  }
+
+  .ink-foot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* The labelled row, kept only where the mark's dots cannot be found.
+     A screen with no pointer has no hover, so it has no easter egg — the
+     dots in the mark are inert type there (see .mark-dot) — and that reader
+     still has to be able to change the ink. Where there *is* a pointer the
+     mark is the picker, and a labelled row of the same six colours a few
+     inches beneath it would give the game away.
+
+     This is the footer's row only. The one in the phone menu is a menu
+     item and stays whatever the pointer is. */
+  @media (hover: hover) {
+    .ink-foot-fallback {
+      display: none;
+    }
+  }
+
+  .ink-label {
+    color: var(--tone-faint);
+  }
+
+  @media (max-width: 420px) {
+    .ink-row.lg {
+      gap: 6px;
+    }
+    .ink-foot {
+      flex-wrap: wrap;
+    }
+  }
+}
+
+@layer utilities {
+  .scrub {
+    --p: 0;
+  }
+
+  /* A 12-bar level meter, used by the listening indicator. */
+  @keyframes level {
+    0%,
+    100% {
+      transform: scaleY(0.22);
+    }
+    50% {
+      transform: scaleY(1);
+    }
+  }
+
+  /* The listening ring on step 01 of the story. */
+  @keyframes ring {
+    from {
+      transform: scale(1);
+      opacity: 0.5;
+    }
+    to {
+      transform: scale(1.35);
+      opacity: 0;
+    }
+  }
+}

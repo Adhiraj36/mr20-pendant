@@ -1,0 +1,9 @@
+/* The whole of the app's stylesheet.
+ *
+ * Metro runs the Tailwind CLI over this file with the classes it finds under
+ * app/ and src/, then hands the output to react-native-css-interop. Nothing
+ * is written here by hand: a colour, a size or a radius belongs in
+ * @lyzn/design, which reaches Tailwind as tokens.json. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

@@ -1,0 +1,63 @@
+name: mobile release
+
+# Tags are scoped to the app because this repository also holds the backend and
+# the site: mobile-v4.3.0, not v4.3.0, so a backend tag never starts a build.
+on:
+  push:
+    tags:
+      - "mobile-v*"
+
+defaults:
+  run:
+    working-directory: mobile
+
+concurrency:
+  group: mobile-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+
+      # The tag names the release; app.json decides what the binary calls
+      # itself. If they disagree, the store listing disagrees with the tag it
+      # came from, and there is no fixing that after submission.
+      - name: Tag must match app.json version
+        run: |
+          set -euo pipefail
+          tag_version="${GITHUB_REF_NAME#mobile-v}"
+          app_version=$(node -p "require('./app.json').expo.version")
+          if [ "$tag_version" != "$app_version" ]; then
+            echo "tag ${GITHUB_REF_NAME} implies version ${tag_version}, but app.json says ${app_version}" >&2
+            exit 1
+          fi
+          echo "releasing ${app_version}"
+
+      - name: Test before shipping
+        run: bun run test
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # Store builds, submitted on completion: iOS to TestFlight, Android to
+      # the Play internal testing track (eas.json pins the track). This one
+      # waits — it is the release, and a failure here has to fail the run.
+      # Build numbers come from EAS, which increments them per build.
+      - name: Build and submit to testing
+        run: eas build --platform all --profile production --non-interactive --auto-submit
+
+      # A sideloadable APK alongside the Play release, for testers who do not
+      # go through Play. Nothing consumes its result, so it does not hold the
+      # runner open; status is on expo.dev.
+      - name: Build sideloadable APK
+        run: eas build --platform android --profile production-apk --non-interactive --no-wait

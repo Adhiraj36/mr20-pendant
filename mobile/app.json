@@ -1,0 +1,162 @@
+{
+  "expo": {
+    "name": "LYZN",
+    "slug": "mr20-pendant",
+    "version": "4.2.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": [
+      "pendant",
+      "karma",
+      "lyzn"
+    ],
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0B0C"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lyzn.flutter",
+      "buildNumber": "3",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "Lyzn AI connects to your pendant over Bluetooth to pull the conversations it has saved and to check its battery and storage.",
+        "NSBluetoothPeripheralUsageDescription": "Lyzn AI connects to your pendant over Bluetooth to pull the conversations it has saved and to check its battery and storage.",
+        "NSMicrophoneUsageDescription": "Your microphone is used only while you are talking to Mira in a voice chat. The pendant records on its own and never uses it.",
+        "UIBackgroundModes": [
+          "bluetooth-central",
+          "audio",
+          "remote-notification"
+        ],
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocalNetworkUsageDescription": "Large recordings come across the pendant's own WiFi hotspot, which is far faster than pulling them over Bluetooth.",
+        "NSAppTransportSecurity": {
+          "NSExceptionDomains": {
+            "Mr20Pe-Voice-ywyH3JiorRMG-753359449.ap-south-1.elb.amazonaws.com": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
+            }
+          }
+        }
+      },
+      "entitlements": {
+        "com.apple.developer.networking.HotspotConfiguration": true
+      }
+    },
+    "android": {
+      "package": "com.lyzn.flutter",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "backgroundColor": "#0B0B0C"
+      },
+      "permissions": [
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.CHANGE_WIFI_STATE",
+        "android.permission.CHANGE_NETWORK_STATE",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        "android.permission.WAKE_LOCK",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.CHANGE_WIFI_STATE",
+        "android.permission.CHANGE_NETWORK_STATE",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        "android.permission.WAKE_LOCK"
+      ],
+      "googleServicesFile": "./google-services.json"
+    },
+    "plugins": [
+      "./plugins/with-android-permissions.js",
+      "expo-router",
+      "expo-secure-store",
+      "expo-audio",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": true,
+          "modes": [
+            "central"
+          ],
+          "bluetoothAlwaysPermission": "Lyzn AI connects to your pendant over Bluetooth to pull the conversations it has saved."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24,
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "usesCleartextTraffic": true
+          },
+          "ios": {
+            "deploymentTarget": "16.4"
+          }
+        }
+      ],
+      "expo-video",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Photos you choose here are sent to Mira so she can look at them with you.",
+          "cameraPermission": "The camera lets you show Mira something directly."
+        }
+      ],
+      "expo-background-task",
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "color": "#EDEAE4",
+          "defaultChannel": "default",
+          "enableBackgroundRemoteNotifications": true
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "34a19cdf-7bc1-44df-ad35-8d47ab1b6cd3"
+      },
+      "clerkPublishableKey": "pk_live_Y2xlcmsubHl6bi5haSQ"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/34a19cdf-7bc1-44df-ad35-8d47ab1b6cd3"
+    }
+  }
+}

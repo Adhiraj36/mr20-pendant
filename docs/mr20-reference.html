@@ -1,0 +1,528 @@
+<title>MR20 Protocol Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+  :root {
+    --ground:      #f6f7f6;
+    --surface:     #ffffff;
+    --surface-alt: #eef1ef;
+    --ink:         #14211f;
+    --muted:       #5c6b68;
+    --rule:        #d5dcd9;
+    --accent:      #b4541e;
+    --accent-soft: #f2e3d8;
+    --signal:      #1f6f63;
+    --signal-soft: #dfeeea;
+    --warn:        #8a6a1f;
+    --warn-soft:   #f4ead2;
+    --danger:      #a33224;
+    --danger-soft: #f6e0dc;
+
+    --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+
+    --measure: 66ch;
+    --pad: clamp(1.25rem, 4vw, 3rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0f1614;
+      --surface:     #16201e;
+      --surface-alt: #1c2725;
+      --ink:         #e4eae7;
+      --muted:       #93a5a1;
+      --rule:        #2b3835;
+      --accent:      #e08a4c;
+      --accent-soft: #33241a;
+      --signal:      #6fc4b3;
+      --signal-soft: #16302c;
+      --warn:        #d6ab5c;
+      --warn-soft:   #302716;
+      --danger:      #e58273;
+      --danger-soft: #351f1b;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #0f1614;
+    --surface:     #16201e;
+    --surface-alt: #1c2725;
+    --ink:         #e4eae7;
+    --muted:       #93a5a1;
+    --rule:        #2b3835;
+    --accent:      #e08a4c;
+    --accent-soft: #33241a;
+    --signal:      #6fc4b3;
+    --signal-soft: #16302c;
+    --warn:        #d6ab5c;
+    --warn-soft:   #302716;
+    --danger:      #e58273;
+    --danger-soft: #351f1b;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: var(--pad);
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+  }
+
+  .prose { max-width: var(--measure); }
+
+  h1, h2, h3 {
+    font-family: var(--display);
+    text-wrap: balance;
+    margin: 0;
+    line-height: 1.15;
+  }
+  h1 { font-size: clamp(2rem, 5vw, 2.9rem); font-weight: 700; letter-spacing: -0.02em; }
+  h2 { font-size: clamp(1.35rem, 3vw, 1.7rem); font-weight: 600; letter-spacing: -0.01em; }
+  p { margin: 0; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  header { display: flex; flex-direction: column; gap: 1rem; }
+  header .sub { color: var(--muted); font-size: 1.1rem; max-width: var(--measure); }
+
+  .ident {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin-top: 0.5rem;
+  }
+  .ident div { background: var(--surface); padding: 0.85rem 1rem; }
+  .ident dt {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;
+  }
+  .ident dd {
+    margin: 0; font-family: var(--mono); font-size: 0.9rem;
+    font-weight: 500; word-break: break-word;
+  }
+
+  .verdicts { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; }
+  .verdict {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--tone, var(--muted));
+    padding: 1.1rem 1.25rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .verdict .label {
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--tone, var(--muted)); font-weight: 600;
+  }
+  .verdict .answer { font-family: var(--display); font-weight: 600; font-size: 1.15rem; }
+  .verdict p { font-size: 0.94rem; color: var(--muted); }
+  .v-yes { --tone: var(--signal); }
+  .v-part { --tone: var(--warn); }
+  .v-no { --tone: var(--danger); }
+
+  section { display: flex; flex-direction: column; gap: 1.1rem; }
+
+  .scroll { overflow-x: auto; border: 1px solid var(--rule); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; min-width: 40rem; }
+  caption {
+    text-align: left; padding: 0.75rem 1rem; font-family: var(--display);
+    font-weight: 600; font-size: 0.95rem; background: var(--surface-alt);
+    border-bottom: 1px solid var(--rule);
+  }
+  th {
+    text-align: left; font-family: var(--mono); font-size: 0.68rem;
+    letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted);
+    font-weight: 500; padding: 0.6rem 1rem; border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.cmd { font-family: var(--mono); font-size: 0.82rem; white-space: nowrap; font-weight: 500; }
+  td.reply { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); }
+  td.num { font-family: var(--mono); font-size: 0.82rem; font-variant-numeric: tabular-nums; text-align: right; }
+
+  .pill {
+    display: inline-block; font-family: var(--mono); font-size: 0.64rem;
+    letter-spacing: 0.07em; text-transform: uppercase; font-weight: 600;
+    padding: 0.15rem 0.45rem; white-space: nowrap;
+    border: 1px solid currentColor;
+  }
+  .p-safe { color: var(--signal); background: var(--signal-soft); }
+  .p-state { color: var(--warn); background: var(--warn-soft); }
+  .p-danger { color: var(--danger); background: var(--danger-soft); }
+  .p-none { color: var(--muted); background: var(--surface-alt); }
+
+  code {
+    font-family: var(--mono); font-size: 0.86em;
+    background: var(--surface-alt); padding: 0.1em 0.32em;
+    border: 1px solid var(--rule);
+  }
+
+  pre {
+    font-family: var(--mono); font-size: 0.82rem; line-height: 1.6;
+    background: var(--surface); border: 1px solid var(--rule);
+    padding: 1rem 1.15rem; overflow-x: auto; margin: 0;
+  }
+  pre .c { color: var(--muted); }
+
+  ul { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.45rem; }
+  li::marker { color: var(--accent); }
+
+  .callout {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.15rem; display: flex; flex-direction: column; gap: 0.4rem;
+  }
+  .callout.bad { border-left-color: var(--danger); background: var(--danger-soft); }
+  .callout .label {
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; font-weight: 600; color: var(--accent);
+  }
+  .callout.bad .label { color: var(--danger); }
+  .callout p { font-size: 0.95rem; }
+
+  hr { border: none; border-top: 1px solid var(--rule); margin: 0; }
+  footer { color: var(--muted); font-size: 0.88rem; padding-bottom: 2rem; }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Verified on hardware &middot; 19 August 2026</div>
+    <h1>MR20 Pendant: what we can control, and can we flash it</h1>
+    <p class="sub">
+      A corrected reference for the pendant's Bluetooth protocol &mdash; the
+      manufacturer's spec does not match the shipped firmware &mdash; plus what
+      its USB descriptors reveal about writing our own.
+    </p>
+    <dl class="ident">
+      <div><dt>MCU firmware</dt><dd>V1.2</dd></div>
+      <div><dt>WiFi firmware</dt><dd>V0001</dd></div>
+      <div><dt>USB id</dt><dd>10D6:B00B &ldquo;MSC Sample&rdquo;</dd></div>
+      <div><dt>SCSI inquiry</dt><dd>ZEPHYR USB DISK</dd></div>
+      <div><dt>Storage</dt><dd>7661 MB FAT32</dd></div>
+      <div><dt>Audio</dt><dd>MP3 16 kHz mono 32 kbps</dd></div>
+      <div><dt>BLE name</dt><dd>YLF20_&lt;mac suffix&gt;</dd></div>
+      <div><dt>Measured BLE rate</dt><dd>~35 kB/s</dd></div>
+    </dl>
+  </header>
+
+  <section>
+    <div class="verdicts">
+      <div class="verdict v-yes">
+        <span class="label">Can we control it?</span>
+        <span class="answer">Yes &mdash; tested end to end</span>
+        <p>Recording start/stop, haptics, telemetry, file listing and
+        byte-exact downloads all confirmed against the device.</p>
+      </div>
+      <div class="verdict v-yes">
+        <span class="label">Can we write firmware?</span>
+        <span class="answer">A documented path exists</span>
+        <p>The spec describes a complete upload sequence over Bluetooth. What
+        we lack is a correctly packaged image, which needs the chip's SDK.</p>
+      </div>
+      <div class="verdict v-no">
+        <span class="label">Can we drive the LED?</span>
+        <span class="answer">No &mdash; 21 spellings refused</span>
+        <p>Every candidate returned <code>DEV&amp;UNKNOWN</code>. The indicator
+        is firmware-driven, so changing it means flashing.</p>
+      </div>
+    </div>
+  </section>
+
+  <hr>
+
+  <section>
+    <div class="eyebrow">Correction</div>
+    <h2>The spec's command names are wrong</h2>
+    <p class="prose">
+      The manufacturer's document writes every command as
+      <code>XS_BLE&amp;&hellip;</code> and every reply as
+      <code>XS_DEV&amp;&hellip;</code>. On firmware V1.2 those are rejected with
+      <code>DEV&amp;UNKNOWN</code>. The shipped build drops the
+      <code>XS_</code> entirely.
+    </p>
+    <div class="scroll">
+      <table>
+        <caption>Same query, three spellings</caption>
+        <thead><tr><th>Sent</th><th>Reply</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">XS_BLE&amp;FW</td><td class="reply">DEV&amp;UNKNOWN</td><td>As documented &mdash; rejected</td></tr>
+          <tr><td class="cmd">BLE&amp;FW</td><td class="reply">DEV&amp;FW&amp;V1.2</td><td><strong>Correct</strong></td></tr>
+          <tr><td class="cmd">FW</td><td class="reply">DEV&amp;UNKNOWN</td><td>Prefix is required</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose">
+      Because other units may ship the documented dialect, our client sends a
+      probe on connect and adopts whichever prefix answers. Everything below is
+      written in the V1.2 form.
+    </p>
+  </section>
+
+  <section>
+    <div class="eyebrow">Results</div>
+    <h2>What we confirmed on the device</h2>
+    <div class="scroll">
+      <table>
+        <caption>Live test results</caption>
+        <thead><tr><th>Capability</th><th>Evidence</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Telemetry</td><td class="reply">battery 98%, 7655/7661 MB free, clock, MAC 50c0f013d830</td><td><span class="pill p-safe">works</span></td></tr>
+          <tr><td>Start recording</td><td class="reply">DEV&amp;STA&amp;2026-08-19 18-34-09</td><td><span class="pill p-safe">works</span></td></tr>
+          <tr><td>Stop recording</td><td class="reply">DEV&amp;STO</td><td><span class="pill p-safe">works</span></td></tr>
+          <tr><td>Haptic motor</td><td class="reply">buzz confirmed by hand</td><td><span class="pill p-safe">works</span></td></tr>
+          <tr><td>Folder &amp; file listing</td><td class="reply">2 folders, 8 recordings with size and duration</td><td><span class="pill p-safe">works</span></td></tr>
+          <tr><td>File download</td><td class="reply">8 files, 5.5 MB, every one byte-exact and valid MP3</td><td><span class="pill p-safe">works</span></td></tr>
+          <tr><td>Live audio stream</td><td class="reply">79,872 bytes in 20 s &rarr; 19.9 s of playable MP3</td><td><span class="pill p-safe">works</span></td></tr>
+          <tr><td>Recording survives disconnect</td><td class="reply">STE&amp;1 on a fresh connection after dropping BLE</td><td><span class="pill p-safe">works</span></td></tr>
+          <tr><td>LED control</td><td class="reply">21 candidate commands, all DEV&amp;UNKNOWN</td><td><span class="pill p-none">absent</span></td></tr>
+          <tr><td>Set recording mode</td><td class="reply">no setter exists; the getter ignores extra arguments</td><td><span class="pill p-none">absent</span></td></tr>
+          <tr><td>Mic gain, bitrate, VAD</td><td class="reply">every probe returned DEV&amp;UNKNOWN</td><td><span class="pill p-none">absent</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose">
+      Transfers averaged roughly 35 kB/s over Bluetooth &mdash; a 2.5 MB
+      recording arrived in about a minute. That is fast enough that the WiFi
+      transfer path, which takes the host off its own network, is rarely worth
+      the disruption.
+    </p>
+  </section>
+
+  <section>
+    <div class="eyebrow">Field notes</div>
+    <h2>Three things that will bite you</h2>
+
+    <div class="callout bad">
+      <span class="label">File transfers and live audio share one channel</span>
+      <p>
+        Downloads arrive on the same notify characteristic that streams live
+        audio. Pull a file while the device is recording and the two interleave:
+        our first sync run produced files 8&ndash;20 kB larger than their declared
+        size, structurally valid MP3 but containing audio that was never part of
+        the recording. Stop recording before syncing. With it stopped, every
+        transfer was byte-exact.
+      </p>
+    </div>
+
+    <div class="callout bad">
+      <span class="label">BLE&amp;STATUS silently stops recording</span>
+      <p>
+        Undocumented, and it answers <code>DEV&amp;STO</code> &mdash; it appears to
+        halt an in-progress recording rather than report anything. Probing an
+        unknown command space is not side-effect free on this firmware.
+      </p>
+    </div>
+
+    <div class="callout">
+      <span class="label">Two details that cost us time</span>
+      <p>
+        File names over Bluetooth carry <em>no</em> <code>.mp3</code> extension,
+        though the same files show one over USB. And the device drops transfer
+        requests issued back to back &mdash; a two second gap between files turned
+        four failures out of eight into zero.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Bluetooth protocol</div>
+    <h2>The GATT interface</h2>
+    <p class="prose">
+      One service carries everything. Commands are ASCII written to
+      <code>&hellip;20a2</code>; replies notify on <code>&hellip;20a3</code>; bulk
+      data &mdash; live audio and file transfers alike &mdash; notifies on
+      <code>&hellip;20a1</code>. Our unit does <em>not</em> advertise this service
+      UUID, so scanning for it finds nothing; it advertises as
+      <code>YLF20_&lt;mac suffix&gt;</code> and only reveals the service after you
+      connect.
+    </p>
+    <div class="scroll">
+      <table>
+        <caption>Service and characteristics</caption>
+        <thead><tr><th>Role</th><th>UUID</th><th>Direction</th></tr></thead>
+        <tbody>
+          <tr><td>Primary service</td><td class="cmd">001120a0-2233-4455-6677-88995a5b5c5d</td><td>&mdash;</td></tr>
+          <tr><td>Audio &amp; bulk data</td><td class="cmd">001120a1-2233-4455-6677-88995a5b5c5d</td><td>notify &rarr; app</td></tr>
+          <tr><td>Commands</td><td class="cmd">001120a2-2233-4455-6677-88995a5b5c5d</td><td>write &rarr; device</td></tr>
+          <tr><td>Replies &amp; events</td><td class="cmd">001120a3-2233-4455-6677-88995a5b5c5d</td><td>notify &rarr; app</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose">
+      The device also exposes a standard Battery Service and four undocumented
+      vendor services, including two write/notify pairs under
+      <code>e49a&hellip;</code> that look like firmware-update channels and are
+      worth investigating before going near the OTA commands.
+    </p>
+  </section>
+
+  <section>
+    <h2>Command reference</h2>
+    <p class="prose">
+      All verified against firmware V1.2. The status column is our assessment:
+      whether a command only reads, changes state reversibly, or destroys
+      something.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <caption>Device state &mdash; all read-only</caption>
+        <thead><tr><th>Command</th><th>Reply</th><th>Returns</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">BLE&amp;STE</td><td class="reply">DEV&amp;STE&amp;1</td><td>Recording now? 1 or 0</td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;BAT</td><td class="reply">DEV&amp;BAT&amp;98</td><td>Battery percentage</td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;SPACE</td><td class="reply">DEV&amp;SPA&amp;007655&amp;007661</td><td>Free and total MB, zero-padded</td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;FW</td><td class="reply">DEV&amp;FW&amp;V1.2</td><td>MCU firmware version</td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;WF</td><td class="reply">DEV&amp;WF&amp;V0001</td><td>WiFi firmware version</td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;MAC</td><td class="reply">DEV&amp;MAC&amp;50c0f013d830</td><td>Bluetooth MAC; matches the advertised name</td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;GT</td><td class="reply">DEV&amp;CT&amp;20260819182902</td><td>Device clock</td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;WIFIS</td><td class="reply">DEV&amp;WIFIS&amp;0</td><td>WiFi state, 0&ndash;7</td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;GET&amp;USB</td><td class="reply">DEV&amp;USB&amp;1</td><td>Is USB file access enabled</td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;REC&amp;SECEN</td><td class="reply">DEV&amp;REC&amp;CALL</td><td>Call or Conversation mode. Read only</td><td><span class="pill p-safe">safe</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <caption>Recording, files and hardware</caption>
+        <thead><tr><th>Command</th><th>Reply</th><th>Meaning</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="cmd">BLE&amp;STA</td><td class="reply">DEV&amp;STA&amp;<i>file</i></td><td>Begin recording; returns the new filename</td><td><span class="pill p-state">changes state</span></td></tr>
+          <tr><td class="cmd">BLE&amp;STO</td><td class="reply">DEV&amp;STO</td><td>Stop and save</td><td><span class="pill p-state">changes state</span></td></tr>
+          <tr><td class="cmd">BLE&amp;LIST_DIRS</td><td class="reply">DEV&amp;DIRS&amp;<i>name</i> &hellip; DEV&amp;DIRS_SUM&amp;002</td><td>One message per date folder, then the count</td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;LIST&amp;<i>dir</i></td><td class="reply">DEV&amp;F&amp;<i>dir</i>&amp;<i>file</i>&amp;<i>secs</i>&amp;<i>bytes</i> &hellip; DEV&amp;LIST&amp;001</td><td>One per recording, then the count</td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;U&amp;<i>dir</i>&amp;<i>file</i></td><td class="reply">DEV&amp;U&amp;<i>len</i></td><td>Download; data follows on the audio channel, ending <code>DEV&amp;OFF</code></td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;W&amp;<i>dir</i>&amp;<i>file</i></td><td class="reply">DEV&amp;W&amp;<i>len</i></td><td>Download over the WiFi socket instead</td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;SHAKE</td><td class="reply">(silent)</td><td>Buzz the haptic motor &mdash; confirmed working</td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;T&amp;<i>ts</i></td><td class="reply">DEV&amp;T&amp;OK</td><td>Set the clock, which names every recording</td><td><span class="pill p-state">changes state</span></td></tr>
+          <tr><td class="cmd">BLE&amp;WIFIO / WIFIC</td><td class="reply">DEV&amp;WIFIO / WIFIC</td><td>Start or stop the access point</td><td><span class="pill p-state">changes state</span></td></tr>
+          <tr><td class="cmd">BLE&amp;WIFI</td><td class="reply">DEV&amp;WIFI&amp;<i>ssid</i>&amp;<i>pwd</i></td><td>Read the AP credentials</td><td><span class="pill p-safe">safe</span></td></tr>
+          <tr><td class="cmd">BLE&amp;SK&amp;<i>key</i></td><td class="reply">DEV&amp;SK&amp;OK</td><td>Bind with a 16-character key. Our unit accepted every command unpaired</td><td><span class="pill p-state">changes state</span></td></tr>
+          <tr><td class="cmd">BLE&amp;D&amp;<i>dir</i>&amp;<i>file</i></td><td class="reply">DEV&amp;D</td><td>Delete a recording</td><td><span class="pill p-danger">destroys data</span></td></tr>
+          <tr><td class="cmd">BLE&amp;BLE&amp;OFF</td><td class="reply">&mdash;</td><td>Disconnect and clear the pairing key, keeping recordings</td><td><span class="pill p-danger">unpairs</span></td></tr>
+          <tr><td class="cmd">BLE&amp;BLE&amp;RESET</td><td class="reply">&mdash;</td><td>Unpair <em>and format the storage</em></td><td><span class="pill p-danger">erases all</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Limits</div>
+    <h2>What Bluetooth cannot do</h2>
+    <p class="prose">
+      Everything here is firmware territory. This list is now backed by probing,
+      not just the absence of a documented command.
+    </p>
+    <ul class="prose">
+      <li><strong>Drive the LED.</strong> Twenty-one spellings, all refused.</li>
+      <li><strong>Arm itself at power-on.</strong> You can start a recording, but boot behaviour is fixed. The mitigation is good, though: <em>recording continues after Bluetooth disconnects</em>, so a host only has to connect long enough to start it.</li>
+      <li><strong>Change the recording mode.</strong> Call and Conversation can be read, never set.</li>
+      <li><strong>Change audio quality, mic gain, or voice-activation.</strong> 16 kHz mono at 32 kbps is fixed.</li>
+      <li><strong>Read raw flash or dump the existing firmware.</strong></li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="eyebrow">Firmware</div>
+    <h2>The two ways in</h2>
+    <p class="prose">
+      Writing firmware is not the blocker. Producing an image the bootloader
+      accepts is. The stock build is <strong>Zephyr RTOS</strong> &mdash; the
+      mass-storage identity strings say so outright &mdash; which means custom
+      firmware is a Zephyr application against an Actions board port, not a
+      from-scratch reverse-engineering effort.
+    </p>
+    <div class="scroll">
+      <table>
+        <caption>Documented over-the-air path (untested &mdash; we have no valid image)</caption>
+        <thead><tr><th>Step</th><th>Message</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td>1. Announce</td><td class="cmd">BLE&amp;OTA&amp;<i>len</i></td><td>Image size as exactly six digits</td></tr>
+          <tr><td>2. Device ready</td><td class="cmd">DEV&amp;OTA</td><td>Send nothing else until finished, or it fails</td></tr>
+          <tr><td>3. Stream</td><td class="cmd">&mdash;</td><td>244-byte frames, at least 8 ms apart; 20 ms on iOS</td></tr>
+          <tr><td>4. Commit</td><td class="cmd">BLE&amp;OT&amp;OVER</td><td>Confirmed by <code>DEV&amp;OT&amp;OVER</code>, refused with <code>DEV&amp;OT&amp;ERR</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose">
+      The second route is <strong>ADFU</strong>, the recovery bootloader in the
+      chip's ROM, which Actions parts expose at USB id <code>10d6:10d6</code>
+      &mdash; usually entered by holding a button while connecting power. It
+      rewrites flash wholesale, bypassing whatever validation OTA enforces. We
+      have not yet confirmed this pendant will enter it; the test is read-only
+      and erases nothing.
+    </p>
+    <p class="prose">
+      To go further we need the board support package for the exact chip, the
+      image packaging format, and ideally the pin mapping for the microphone,
+      button, LED and haptic. The manufacturer already shared the protocol spec,
+      so asking them is the fastest route &mdash; and worth mentioning that the
+      spec they sent does not match the firmware they shipped.
+    </p>
+  </section>
+
+  <section>
+    <div class="eyebrow">Proof of concept</div>
+    <h2>What we built</h2>
+    <p class="prose">
+      A Python client for the protocol and a sync daemon that keeps the pendant
+      recording and pulls everything into a local library, skipping what it
+      already has. Destructive commands are refused unless explicitly unlocked,
+      and the daemon will not take the host off its own network unless it knows
+      how to put it back.
+    </p>
+<pre><span class="c"># our unit does not advertise the service, so probe a likely address</span>
+mr20.py --address &lt;uuid&gt; probe
+mr20.py --address &lt;uuid&gt; info
+mr20.py --address &lt;uuid&gt; shake      <span class="c"># proves hardware control</span>
+mr20.py --address &lt;uuid&gt; listen --seconds 20
+
+<span class="c"># continuous sync: record always, pull everything, never re-fetch</span>
+mr20sync.py --library ~/pendant --address &lt;uuid&gt; --no-wifi</pre>
+    <p class="prose">
+      Seventy-nine automated checks cover protocol parsing, the safety gate
+      (including proof that a blocked command never reaches the wire), MP3 frame
+      alignment, library round-trips and the network guard. All pass. On the
+      device, eight recordings totalling 5.5 MB synced byte-exact, verified by
+      md5 against an independently captured copy.
+    </p>
+  </section>
+
+  <hr>
+
+  <footer class="prose">
+    Compiled from the manufacturer's protocol spec (MR20, 2 July 2026) and
+    direct testing against firmware V1.2 over USB and Bluetooth. Command
+    semantics are the manufacturer's; the dialect correction, safety
+    classifications, field notes and firmware assessment are ours.
+  </footer>
+
+</div>

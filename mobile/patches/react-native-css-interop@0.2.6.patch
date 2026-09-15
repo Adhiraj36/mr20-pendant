@@ -1,0 +1,13 @@
+diff --git a/dist/runtime/native/native-interop.js b/dist/runtime/native/native-interop.js
+index 254b7ba65bd7e77982db73d793b157b15272f434..5e9eeb439abc03966ea78fb51b08a30cf7f3174c 100644
+--- a/dist/runtime/native/native-interop.js
++++ b/dist/runtime/native/native-interop.js
+@@ -230,7 +230,7 @@ function getDeclarations(previousState, refs, action) {
+             collectRules(state, refs, ruleSet, importantRules, "i");
+         }
+     }
+-    if (config.inlineProp && refs.props?.[config.inlineProp]) {
++    if (config.inlineProp && refs.props?.[config.inlineProp] && typeof refs.props[config.inlineProp] !== 'function') {
+         collectInlineRules(state, refs, refs.props[config.inlineProp], state.declarationTracking.effect, normalRules, importantRules);
+     }
+     state.normal = normalRules

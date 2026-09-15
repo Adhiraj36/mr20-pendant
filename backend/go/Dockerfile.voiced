@@ -1,0 +1,18 @@
+# The voice-chat server (cmd/voiced). Built by CodeBuild — this Mac has no
+# container runtime — and pushed to ECR for the Fargate service.
+FROM public.ecr.aws/docker/library/golang:1.24 AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -trimpath -o /voiced ./cmd/voiced
+
+FROM public.ecr.aws/amazonlinux/amazonlinux:2023-minimal
+COPY --from=build /voiced /voiced
+# karma's config layer looks for a .env beside the binary and logs a stack
+# trace at error level for every lookup when it is missing — four per turn,
+# which buries the lines that matter. Configuration comes from the task
+# definition; an empty file is enough to keep the logs readable.
+RUN touch /.env
+EXPOSE 8080
+ENTRYPOINT ["/voiced"]

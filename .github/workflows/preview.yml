@@ -1,0 +1,186 @@
+name: preview
+
+# A pull request labelled `preview` gets its own backend, and loses it when the
+# pull request closes — merged or not.
+on:
+  pull_request:
+    types: [labeled, synchronize, reopened, closed]
+
+concurrency:
+  # One deploy or teardown at a time per pull request. Never cancel: a killed
+  # cdk run leaves a stack mid-update.
+  group: preview-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+env:
+  STACK: Mr20PendantPreview-pr-${{ github.event.pull_request.number }}
+
+jobs:
+  deploy:
+    # A fork's pull request cannot reach this: GitHub withholds the OIDC token
+    # from it, and the head-repo check says so explicitly rather than resting on
+    # that alone. Deploying carries the same AWS rights as a merge to main, so
+    # the gate is a label, which only someone with write access can attach.
+    if: >
+      github.event.action != 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'preview')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go/go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - uses: actions/cache@v4
+        with:
+          path: backend/go/lambda-assets
+          key: audio-tools-${{ hashFiles('backend/go/fetch-audio-tools.sh') }}
+
+      - run: npm ci
+
+      # ExtractFn's container image is built for linux/arm64 (see lib/mr20-stack.ts),
+      # but this runner is x86_64. Without QEMU + buildx, `cdk deploy` runs the
+      # Dockerfile's arm64 steps (e.g. `pip install`) natively and they fail with
+      # an exec-format error.
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-south-1
+
+      - name: Deploy this pull request's backend
+        id: deploy
+        run: |
+          set -euo pipefail
+          # The API keys are CloudFormation-named, so their ARNs come from the
+          # production stack rather than from a name written in the source.
+          OUT=$(aws cloudformation describe-stacks --stack-name Mr20PendantStack --region ap-south-1 --query "Stacks[0].Outputs" --output json)
+          deepgram=$(echo "$OUT" | jq -r '.[] | select(.OutputKey=="DeepgramSecretArn") | .OutputValue')
+          sarvam=$(echo "$OUT" | jq -r '.[] | select(.OutputKey=="SarvamSecretArn") | .OutputValue')
+          claude=$(echo "$OUT" | jq -r '.[] | select(.OutputKey=="ClaudeOAuthSecretArn") | .OutputValue')
+
+          ./go/build.sh
+          npx cdk deploy "$STACK" --require-approval never \
+            -c previewPr=${{ github.event.pull_request.number }} \
+            -c deepgramSecretArn="$deepgram" \
+            -c sarvamSecretArn="$sarvam" \
+            -c claudeOAuthSecretArn="$claude"
+
+          url=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ap-south-1 \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)
+          echo "url=${url%/}" >> "$GITHUB_OUTPUT"
+
+      # One comment per pull request, rewritten in place on each push rather
+      # than a new one every time. Done with gh and the job's own token: a
+      # third-party action here would run alongside live AWS credentials.
+      - name: Comment the preview URL
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          URL: ${{ steps.deploy.outputs.url }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        working-directory: .
+        run: |
+          set -euo pipefail
+          body=$(cat <<EOF
+          <!-- preview-comment -->
+          ### 🧪 Preview backend
+
+          \`$URL\`
+
+          Built from \`$SHA\`. CORS is wide open here, which production's is not,
+          so a local build can talk to it directly.
+
+          Its own table and bucket, both empty — no production data is reachable
+          from it. There is no voice service and no CDN: this is the API, the
+          pipeline behind it, and nothing else.
+
+          Torn down automatically when this pull request closes.
+          EOF
+          )
+          existing=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
+            --jq '.[] | select(.body | contains("<!-- preview-comment -->")) | .id' | head -1)
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" -f body="$body" >/dev/null
+            echo "updated comment $existing"
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$body" >/dev/null
+            echo "posted a new comment"
+          fi
+
+  destroy:
+    if: >
+      github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-south-1
+
+      # CloudFormation directly, not `cdk destroy`: destroying through the CDK
+      # would have to synthesise the app first, which needs Go binaries built
+      # for the occasion purely to delete something. CloudFormation already
+      # holds the role it created the stack with, and uses it to take the stack
+      # apart.
+      #
+      # This runs whether or not the label is still attached, so a preview
+      # cannot outlive its pull request because someone removed the label.
+      - name: Tear down this pull request's backend
+        id: teardown
+        run: |
+          set -euo pipefail
+          if ! aws cloudformation describe-stacks --stack-name "$STACK" --region ap-south-1 >/dev/null 2>&1; then
+            echo "no preview stack for this pull request"
+            echo "existed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          aws cloudformation delete-stack --stack-name "$STACK" --region ap-south-1
+          aws cloudformation wait stack-delete-complete --stack-name "$STACK" --region ap-south-1
+          echo "deleted $STACK"
+          echo "existed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Say so on the pull request
+        if: steps.teardown.outputs.existed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          body=$(printf '%s\n' \
+            '<!-- preview-comment -->' \
+            '### 🧹 Preview backend torn down' \
+            '' \
+            'The stack for this pull request, its table and its bucket are gone.')
+          existing=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
+            --jq '.[] | select(.body | contains("<!-- preview-comment -->")) | .id' | head -1)
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" -f body="$body" >/dev/null
+          else
+            gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$body" >/dev/null
+          fi

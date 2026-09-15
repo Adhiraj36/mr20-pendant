@@ -1,0 +1,125 @@
+<!--
+  The Overview: the default dashboard, built from the same kit an agent's
+  dashboard is. It ships with the app, so it may read every live source; the
+  engine's Start, Stop and Restart stay in the app's own header, because no
+  page takes an action.
+-->
+<lz-page>
+  <lz-grid cols="4">
+    <lz-stat label="Running now" source="live:tasks.running.length" empty="—"></lz-stat>
+    <lz-stat label="Waiting on you" source="live:tasks.blocked.length"></lz-stat>
+    <lz-stat label="Up next" source="live:tasks.waiting.length"></lz-stat>
+    <lz-stat label="Receipts" source="live:tasks.finished.length"></lz-stat>
+  </lz-grid>
+
+  <lz-grid cols="2">
+    <lz-card title="The brain" subtitle="The coding assistant, kept warm so replies are fast.">
+      <overview-brain></overview-brain>
+    </lz-card>
+    <lz-card title="Loops" subtitle="Failing ones first.">
+      <lz-table
+        source="live:loop-health.loops"
+        columns="name:Loop,last_success:Last worked:ago,consecutive_failures:Failures:number"
+        sort="-consecutive_failures"
+        limit="6"
+        empty="Nothing is scheduled yet."
+      ></lz-table>
+    </lz-card>
+  </lz-grid>
+
+  <lz-grid cols="2">
+    <lz-card title="Recent receipts" subtitle="Tasks from the LYZN app this machine finished.">
+      <lz-list
+        source="live:tasks.finished"
+        primary="text"
+        meta="finishedAt"
+        meta-format="ago"
+        status="status"
+        limit="6"
+        empty="No receipts yet. Approve a task in the LYZN app and it lands here when it is done."
+      ></lz-list>
+    </lz-card>
+    <lz-card title="How often each loop ran" subtitle="Runs since the engine started keeping count.">
+      <lz-chart kind="hbar" source="live:activity.jobs" x="name" y="run_count" labels="Runs" format="number" empty="No loop has run yet."></lz-chart>
+    </lz-card>
+  </lz-grid>
+
+  <lz-grid cols="2">
+    <lz-card title="Coding sessions" subtitle="Work the brain picked up and can continue.">
+      <lz-list
+        source="live:activity.coding_sessions"
+        primary="description"
+        meta="updated_at"
+        meta-format="ago"
+        status="status"
+        limit="6"
+        empty="No coding sessions yet."
+      ></lz-list>
+    </lz-card>
+    <lz-card title="Engine log" subtitle="Newest first.">
+      <lz-feed source="live:logs" time="at" text="text" kind="stream" time-format="time" limit="14" reverse empty="The engine has not printed anything yet."></lz-feed>
+    </lz-card>
+  </lz-grid>
+</lz-page>
+
+<script>
+  // The brain's two counts and its usage limits, from one live source. Built
+  // out of the kit's own elements so it looks like everything around it.
+  customElements.define(
+    'overview-brain',
+    class extends HTMLElement {
+      connectedCallback() {
+        lz.bind(this, 'live:brain', (brain, error) => {
+          if (error || !brain) {
+            const note = document.createElement('p')
+            note.className = 'lz-note'
+            note.textContent = 'Start the engine to see what it is thinking with.'
+            this.replaceChildren(note)
+            return
+          }
+          if (!brain.enabled) {
+            const status = document.createElement('lz-status')
+            status.setAttribute('value', 'paused')
+            status.setAttribute('label', 'Using the backup API models')
+            const note = document.createElement('p')
+            note.className = 'lz-note'
+            note.textContent = 'The coding assistant is switched off in Settings, so replies are slower.'
+            this.replaceChildren(status, note)
+            return
+          }
+          const sessions = Array.isArray(brain.sessions) ? brain.sessions : []
+          const stat = (label, value) => {
+            const el = document.createElement('lz-stat')
+            el.setAttribute('label', label)
+            el.setAttribute('value', String(value))
+            return el
+          }
+          const counts = document.createElement('div')
+          counts.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px'
+          counts.append(stat('Live conversations', sessions.filter((s) => s.live).length), stat('Conversations kept', sessions.length))
+          const parts = [counts]
+
+          if (brain.paused) {
+            const paused = document.createElement('lz-status')
+            paused.setAttribute('value', 'paused')
+            paused.setAttribute('label', `Paused: ${brain.pause_reason || 'the usage limit was reached'}`)
+            parts.push(paused)
+          } else {
+            for (const [name, window] of Object.entries(brain.rate_limits || {})) {
+              const used = parseFloat(String(window.used))
+              if (!Number.isFinite(used)) continue
+              const meter = document.createElement('lz-progress')
+              meter.setAttribute('label', `${name} limit`)
+              meter.setAttribute('value', String(used))
+              meter.setAttribute('warn-at', '70')
+              meter.setAttribute('bad-at', '90')
+              meter.style.marginTop = '10px'
+              parts.push(meter)
+            }
+          }
+          this.replaceChildren(...parts)
+        })
+      }
+    },
+  )
+</script>

@@ -1,0 +1,91 @@
+name: web
+
+on:
+  pull_request:
+    paths:
+      - "web/**"
+      - ".github/workflows/web-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - ".github/workflows/web-ci.yml"
+
+defaults:
+  run:
+    working-directory: web
+
+concurrency:
+  group: web-deploy
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+      - name: Typecheck and build
+        run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push'
+        with:
+          name: web-dist
+          path: web/dist
+          retention-days: 1
+
+  # The bucket and distribution are owned by LyznWebStack, which the backend
+  # workflow deploys — the CDK app lives in backend/. This job only puts the
+  # built site into them.
+  deploy:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-south-1
+
+      - name: Sync to S3 and invalidate CloudFront
+        working-directory: .
+        run: |
+          set -euo pipefail
+          OUT=$(aws cloudformation describe-stacks --stack-name LyznWebStack --region ap-south-1 --query "Stacks[0].Outputs" --output json)
+          bucket=$(echo "$OUT" | jq -r '.[] | select(.OutputKey=="SiteBucketName") | .OutputValue')
+          dist=$(echo "$OUT" | jq -r '.[] | select(.OutputKey=="SiteDistributionId") | .OutputValue')
+
+          # Hashed assets are immutable and safe to cache hard; index.html is
+          # the entry point every visitor re-reads, so it must not be cached at
+          # the edge past a deploy.
+          #
+          # `downloads/` is excluded from the sync, and that exclusion is load
+          # bearing: it is written by the desktop workflow, not by this build,
+          # so `--delete` would take every installer off the site the next time
+          # anybody changed a heading. An exclude keeps a key out of the delete
+          # pass as well as the copy pass, which is exactly what is wanted.
+          aws s3 sync dist "s3://$bucket" --delete \
+            --cache-control "public,max-age=31536000,immutable" \
+            --exclude "index.html" \
+            --exclude "downloads/*"
+          aws s3 cp dist/index.html "s3://$bucket/index.html" \
+            --cache-control "no-cache,must-revalidate"
+
+          aws cloudfront create-invalidation --distribution-id "$dist" --paths "/*" >/dev/null
+          echo "deployed to $bucket, invalidated $dist"

@@ -1,0 +1,257 @@
+# The LYZN daemon desktop app, built for the three machines people have.
+#
+# One runner per operating system, and that is not a preference: the engine
+# needs cgo for SQLite, so a Linux binary cannot honestly be produced on a Mac.
+# `scripts/build-core.sh` refuses a target it cannot build rather than emitting
+# something that will not start, and this file is what gives it a machine of
+# each kind. macOS is the one exception — its SDK carries both architectures,
+# so one Mac runner builds both slices.
+#
+# The engine is a different repository, public, and pinned by `karmax_ref` so a
+# release names the revision it shipped rather than "whatever main was".
+#
+# Nothing here is code-signed. An unsigned dmg makes Gatekeeper say the app is
+# from an unidentified developer and an unsigned installer makes SmartScreen
+# say much the same, which is the honest state of things until there is a
+# Developer ID and an EV certificate to sign with — better a warning somebody
+# can read than a pipeline that pretends.
+name: desktop
+
+on:
+  workflow_dispatch:
+    inputs:
+      karmax_ref:
+        description: Engine revision to bundle (branch, tag or sha)
+        default: main
+      publish:
+        description: Put the result on lyzn.ai/daemon for download
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'desktop-v*'
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # One platform failing should not deny you the other two.
+      fail-fast: false
+      matrix:
+        include:
+          - label: macOS
+            os: macos-latest
+            targets: darwin/arm64 darwin/amd64
+            platform: --mac
+          - label: Linux
+            os: ubuntu-latest
+            targets: linux/amd64
+            platform: --linux
+          - label: Windows
+            os: windows-latest
+            targets: windows/amd64
+            platform: --win
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The engine, beside this checkout rather than inside it: it is its own
+      # product and this app only bundles a build of it.
+      - uses: actions/checkout@v4
+        with:
+          repository: MelloB1989/KARMAX
+          ref: ${{ inputs.karmax_ref || 'main' }}
+          path: .engine
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .engine/go.mod
+          cache-dependency-path: .engine/go.sum
+
+      # The engine's go.mod replaces two of its dependencies with paths under
+      # one developer's home directory, so it resolves on exactly one computer
+      # and nowhere else — the reason its own CI has been red for weeks. Both
+      # modules are public at the versions it already asks for, so dropping the
+      # replaces here makes the checkout buildable without waiting on a change
+      # in a repository this one does not own. A no-op once KARMAX carries the
+      # fix itself (MelloB1989/KARMAX#3).
+      - name: Let the engine resolve off one particular laptop
+        shell: bash
+        working-directory: .engine
+        run: |
+          go mod edit -dropreplace=github.com/MelloB1989/karma \
+                      -dropreplace=github.com/MelloB1989/wacli
+          go mod tidy
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Build the engine
+        shell: bash
+        working-directory: desktop
+        env:
+          KARMAX_SRC: ${{ github.workspace }}/.engine
+          CGO_ENABLED: '1'
+        run: bash scripts/build-core.sh ${{ matrix.targets }}
+
+      # macOS only: the helper is a Speech framework app, and the composer on
+      # the other platforms simply has no microphone.
+      - name: Build dictation
+        if: runner.os == 'macOS'
+        shell: bash
+        working-directory: desktop
+        env:
+          DICTATE_ARCHS: arm64 x86_64
+        run: bash scripts/build-dictate.sh
+
+      - name: Install
+        working-directory: desktop
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: desktop
+        run: npm run typecheck
+
+      - name: Build the app
+        working-directory: desktop
+        run: npm run build
+
+      - name: Package
+        working-directory: desktop
+        # `--publish never`: this workflow produces artifacts and nothing else.
+        # Publishing is a decision with a version number attached to it.
+        run: npx electron-builder ${{ matrix.platform }} --publish never
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lyzn-daemon-${{ matrix.label }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            desktop/release/*.dmg
+            desktop/release/*.AppImage
+            desktop/release/*.exe
+            desktop/release/*.yml
+
+  # ── Publishing ──
+  #
+  # The installers go to the website's own bucket, not to a GitHub release:
+  # this repository is private, so a release asset is a link that asks a
+  # stranger to log in. lyzn.ai/downloads/<name> is a plain file on the same
+  # CloudFront distribution as the page that links to it.
+  #
+  # `needs: build` and no `if` on failure, deliberately. The build matrix
+  # tolerates one platform failing because two artifacts are better than
+  # none; a *release* that quietly omits Windows is not. All three, or
+  # nothing goes out.
+  publish:
+    name: Publish for download
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/desktop-v') || inputs.publish
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the version, and hold the tag to it
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./desktop/package.json').version")
+          if [[ "$GITHUB_REF" == refs/tags/desktop-v* ]]; then
+            tagged="${GITHUB_REF#refs/tags/desktop-v}"
+            if [[ "$tagged" != "$version" ]]; then
+              echo "::error::the tag says $tagged and desktop/package.json says $version." \
+                   "One of them is wrong, and a dmg that lies about its version is worse" \
+                   "than a failed release."
+              exit 1
+            fi
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: lyzn-daemon-*
+          merge-multiple: true
+
+      - name: Check every machine is represented
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in LYZN-Daemon-mac-arm64.dmg LYZN-Daemon-mac-x64.dmg \
+                      LYZN-Daemon-linux-x64.AppImage LYZN-Daemon-windows-x64.exe; do
+            if [[ ! -f "artifacts/$name" ]]; then
+              echo "::error::$name was not built"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-south-1
+
+      - name: Put them where the site serves them
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          OUT=$(aws cloudformation describe-stacks --stack-name LyznWebStack \
+                --region ap-south-1 --query "Stacks[0].Outputs" --output json)
+          bucket=$(echo "$OUT" | jq -r '.[] | select(.OutputKey=="SiteBucketName") | .OutputValue')
+          dist=$(echo "$OUT" | jq -r '.[] | select(.OutputKey=="SiteDistributionId") | .OutputValue')
+
+          content_type() {
+            case "${1##*.}" in
+              dmg) echo application/x-apple-diskimage ;;
+              AppImage) echo application/x-executable ;;
+              exe) echo application/vnd.microsoft.portable-executable ;;
+              *) echo application/octet-stream ;;
+            esac
+          }
+
+          for file in artifacts/*.dmg artifacts/*.AppImage artifacts/*.exe; do
+            name=$(basename "$file")
+            type=$(content_type "$name")
+
+            # The archive copy. Named by version, never rewritten, so it can
+            # be cached forever — and so the release before this one is still
+            # downloadable when this one turns out to be wrong.
+            aws s3 cp "$file" "s3://$bucket/downloads/v$VERSION/$name" \
+              --content-type "$type" --cache-control "public,max-age=31536000,immutable"
+
+            # The copy the page links at. Same name every release, so it must
+            # not be held at an edge or in a browser past one.
+            aws s3 cp "$file" "s3://$bucket/downloads/$name" \
+              --content-type "$type" --cache-control "public,max-age=300,must-revalidate"
+          done
+
+          # What the page reads to say which version it is offering, and
+          # whether there is one at all. Its absence is the honest state
+          # before the first release: the page says so rather than showing
+          # four buttons that 404.
+          jq -n --arg v "$VERSION" --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                --arg commit "$GITHUB_SHA" \
+             '{version: $v, published: $at, commit: $commit}' > latest.json
+          aws s3 cp latest.json "s3://$bucket/downloads/latest.json" \
+            --content-type application/json --cache-control "no-cache,must-revalidate"
+
+          aws cloudfront create-invalidation --distribution-id "$dist" \
+            --paths "/downloads/*" >/dev/null
+          echo "published $VERSION to https://lyzn.ai/downloads/"
+

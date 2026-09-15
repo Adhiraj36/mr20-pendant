@@ -1,0 +1,802 @@
+/* ─────────────────────────────────────────────────────────────
+   Section 02 — what it costs.
+
+   Ported from the reference site rather than reinterpreted: the rules
+   below are its styles/pricing.css and styles/receipt.css, plus the four
+   things they lean on in its styles/page.css — .sec, .btn, .order and
+   @keyframes print. Values are the reference's; where a name would have
+   collided with something this codebase already owns, only the name has
+   moved, and each of those is noted where it happens.
+
+   Everything is scoped under .pricing-sec, tokens included, so the
+   section prints in the reference's colours without moving one anywhere
+   else on the site.
+   ───────────────────────────────────────────────────────────── */
+
+.pricing-sec {
+  /* The reference's names, scoped. On :root they would repaint the whole
+     site; here they reach exactly the section that was ported.
+
+     None of them is a value any more. Every one is an alias for a colour
+     in @lyzn/design, which took this section's palette up when the rest of
+     the site did: the desk is the body's ground, the paper is the sheet
+     every panel on it is, and the stamp is the blue every button hovers
+     to. One value, one owner, and the owner is the package.
+
+     `--void` is the exception worth naming. The reference prints a
+     cancelled line in #B03A2E; the package deliberately does not hold that
+     hex, because a red that says "no" on this site is `danger`. So the
+     name stays and the colour is the site's. */
+  --desk: var(--color-desk);
+  --paper: var(--color-sheet);
+  --ink: var(--color-inkfg);
+  --faded: var(--color-faded);
+  --rule: var(--color-rule);
+  --stamp: var(--color-stamp);
+  --settled: var(--color-settled);
+  --void: var(--color-danger);
+
+  /* No ground of its own. The desk and its grid are the body's, under the
+     whole page; this section is one of the transparent ones on it, and
+     painting the same colour again here would only be a second owner of
+     it. The receipt's scallop still bites `--desk` out of its ends, and
+     what shows through is the body. */
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+/* The reference's faces, by the names this codebase loads them under —
+   the same Archivo and Martian Mono, with the metric-matched fallbacks
+   that keep the page from re-wrapping when they land. */
+.pricing-sec .mono {
+  font-family: var(--font-mono);
+}
+
+/* The section's one focus ring: square, and the stamp's blue. */
+.pricing-sec :focus-visible {
+  outline: 2.5px solid var(--stamp);
+  outline-offset: 3px;
+  border-radius: 0;
+}
+
+/* ---------- the numbered head ---------- */
+.pricing-sec .sec {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 110px 30px;
+}
+.pricing-sec .sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+.pricing-sec .sec-no {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--faded);
+  letter-spacing: 0.1em;
+  flex: none;
+}
+/* var(--heading) is the ink picker's; until it exists the heading is Ink. */
+.pricing-sec h2 {
+  font-size: clamp(30px, 4.4vw, 46px);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  color: var(--heading, var(--ink));
+}
+.pricing-sec .sec-note {
+  margin-top: 14px;
+  font-size: 18px;
+  /* The one colour left in this file that is not the package's. It is the
+     reference's own note grey — a step above --faded and a step below
+     --ink, and neither of them — and @lyzn/design has no name for it. It
+     stays a literal rather than being rounded to a token it is not; give
+     it a name in the package and this becomes an alias like the rest. */
+  color: #3b3b33;
+  max-width: 52ch;
+  line-height: 1.55;
+}
+
+/* "X/100 people already bought" — a thin rule filled to the real fraction,
+   in --settled: the same green a receipt marks a paid line in, which is
+   what every count past the counter's floor of 36 actually is. */
+.pricing-sec .pricing-counter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faded);
+}
+.pricing-sec .pricing-counter-rule {
+  position: relative;
+  width: 64px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--rule);
+  overflow: hidden;
+}
+.pricing-sec .pricing-counter-rule::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: var(--pct);
+  background: var(--settled);
+}
+
+/* ---------- the two columns ----------
+   One height for both. Capture's receipt lists six items and the other two
+   list four, so without this the left column and the receipt only line up
+   on some tiers — and the right column jumped height when you switched.
+   Pinning both sides to the tallest receipt fixes both. Update this if
+   receipt rows change; nothing else depends on it. */
+.pricing-sec .pricing {
+  --rcpt-min: 446px;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 48px;
+  align-items: start;
+}
+
+/* ---------- left: tier options ---------- */
+.pricing-sec .tiers {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: var(--rcpt-min);
+  justify-content: space-between;
+}
+.pricing-sec .tier {
+  position: relative;
+}
+
+/* a real radio, visually replaced by the card but still the focus target */
+.pricing-sec .tier-in {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.pricing-sec .tier-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: pointer;
+  background: var(--paper);
+  border: 1.5px solid var(--rule);
+  border-radius: 0;
+  padding: 16px 18px 15px;
+}
+.pricing-sec .tier-in:checked + .tier-card {
+  gap: 12px;
+}
+.pricing-sec .tier-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+.pricing-sec .tier-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--faded);
+  /* The names are sentence case in PLANS, because the checkout sets them
+     that way; the section shouts them, as the reference does. */
+  text-transform: uppercase;
+}
+.pricing-sec .tier-price {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--faded);
+  white-space: nowrap;
+}
+/* same treatment as the TXN line in a receipt (.s-foot) */
+.pricing-sec .tier-line {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+  color: var(--faded);
+}
+.pricing-sec .tier-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pricing-sec .tier-bullet {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-left: 16px;
+  position: relative;
+  color: var(--ink);
+}
+.pricing-sec .tier-bullet::before {
+  content: '·';
+  position: absolute;
+  left: 4px;
+  color: var(--faded);
+}
+
+/* collapsed by default — only the selected tier shows its bullets and footnote */
+.pricing-sec .tier-in:not(:checked) + .tier-card .tier-list {
+  display: none;
+}
+.pricing-sec .tier-in:not(:checked) ~ .tier-foot {
+  display: none;
+}
+
+/* selected: 2px Ink border, name and price in Ink. Nothing else changes. */
+.pricing-sec .tier-in:checked + .tier-card {
+  border: 2px solid var(--ink);
+  padding: 15.5px 17.5px 14.5px;
+}
+.pricing-sec .tier-in:checked + .tier-card .tier-name,
+.pricing-sec .tier-in:checked + .tier-card .tier-price {
+  color: var(--ink);
+}
+.pricing-sec .tier-in:focus-visible + .tier-card {
+  outline: 2.5px solid var(--stamp);
+  outline-offset: 3px;
+}
+
+.pricing-sec .tier-foot {
+  margin-top: 7px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--faded);
+  line-height: 1.55;
+  text-transform: uppercase;
+}
+
+/* ---------- right: receipt + form ---------- */
+.pricing-sec .pricing-right {
+  position: sticky;
+  top: 96px;
+}
+.pricing-sec .paysheet {
+  background: none;
+}
+.pricing-sec .paysheet-bar {
+  display: none;
+} /* desktop: no summary bar, sheet is open */
+.pricing-sec .paysheet-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.pricing-sec .paysheet .rcpt,
+.pricing-sec .paysheet .order {
+  width: 100%;
+  max-width: 400px;
+}
+.pricing-sec .paysheet .order {
+  margin-top: 26px;
+}
+
+/* ---------- the receipt ----------
+   The reference calls this .slip. That name is already taken here by the
+   torn slips flying through the story section, whose clip-path would eat
+   the scalloped edge below, so the receipt keeps only .rcpt. Every rule
+   is the reference's styles/receipt.css. */
+.pricing-sec .rcpt {
+  position: relative;
+  background: var(--paper);
+  padding: 26px 24px 30px;
+  min-height: var(--rcpt-min);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.05),
+    0 14px 34px -18px rgba(28, 28, 22, 0.5);
+  /* the reprint. React remounts the article on a tier change, so switching
+     tier reprints the slip line by line. */
+  animation: print 0.4s steps(14, end) both;
+}
+/* The scallop: a row of the desk bitten out of each end. */
+.pricing-sec .rcpt::before,
+.pricing-sec .rcpt::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 9px;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 6px 0, var(--desk) 5.6px, transparent 6px);
+  background-size: 12px 9px;
+  background-repeat: repeat-x;
+}
+.pricing-sec .rcpt::before {
+  top: 0;
+}
+.pricing-sec .rcpt::after {
+  bottom: 0;
+  transform: scaleY(-1);
+}
+
+.pricing-sec .s-head {
+  text-align: center;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--rule);
+}
+.pricing-sec .s-brand {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.pricing-sec .s-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--faded);
+  margin-top: 6px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pricing-sec .s-body {
+  padding: 14px 0 6px;
+}
+.pricing-sec .ln {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 5px 0;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.pricing-sec .ln .k {
+  color: var(--faded);
+  white-space: nowrap;
+}
+.pricing-sec .ln .lead {
+  flex: 1;
+  border-bottom: 1px dotted var(--rule);
+  transform: translateY(-3px);
+  min-width: 14px;
+}
+.pricing-sec .ln .v {
+  white-space: nowrap;
+  font-weight: 500;
+}
+.pricing-sec .ln .v.ok {
+  color: var(--settled);
+  font-weight: 700;
+}
+.pricing-sec .ln .v.tot {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+/* What somebody else charges for the same two years, struck through. */
+.pricing-sec .ln .v.was {
+  color: var(--faded);
+  text-decoration: line-through;
+  text-decoration-color: var(--void);
+  text-decoration-thickness: 1.5px;
+}
+.pricing-sec .ln .k.was {
+  text-decoration: line-through;
+  text-decoration-color: var(--void);
+  text-decoration-thickness: 1.5px;
+}
+.pricing-sec .ln.sum {
+  border-top: 1.5px solid var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+  margin: 10px 0;
+  padding: 10px 0;
+}
+/* The reference sets these two inline on the total's key. */
+.pricing-sec .ln.sum .k {
+  color: var(--ink);
+  font-weight: 700;
+}
+.pricing-sec .s-foot {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--faded);
+  letter-spacing: 0.08em;
+  padding-top: 12px;
+  border-top: 1px dashed var(--rule);
+  text-transform: uppercase;
+}
+/* barcode: the bars come from barcodeBars(), seeded by the tier, and are
+   emitted as one repeating gradient. No two tiers share a pattern. */
+.pricing-sec .code {
+  height: 34px;
+  margin: 14px 0 8px;
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+}
+.pricing-sec .stamp {
+  position: absolute;
+  right: 16px;
+  top: 64px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--stamp);
+  border: 2.5px solid var(--stamp);
+  border-radius: 4px;
+  padding: 6px 10px;
+  transform: rotate(-11deg);
+  opacity: 0.82;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  text-transform: uppercase;
+}
+
+@keyframes print {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* ---------- form ---------- */
+.pricing-sec .order {
+  width: 400px;
+  max-width: 100%;
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pricing-sec .order label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--faded);
+  text-transform: uppercase;
+}
+.pricing-sec .order input {
+  width: 100%;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  padding: 13px 14px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink);
+  border-radius: 0;
+  letter-spacing: 0.02em;
+}
+.pricing-sec .order input::placeholder {
+  color: var(--faded);
+}
+.pricing-sec .order input:focus {
+  outline: none;
+  border-color: var(--stamp);
+  box-shadow: inset 0 0 0 1px var(--stamp);
+}
+.pricing-sec .order .err {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--void);
+  line-height: 1.5;
+  margin-top: -6px;
+  text-transform: uppercase;
+}
+.pricing-sec .order .note{font-family:'Martian Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.06em;color:var(--faded);line-height:1.5;margin-top:-2px}
+.pricing-sec .order .err:empty {
+  display: none;
+}
+.pricing-sec .order input[aria-invalid='true'] {
+  border-color: var(--void);
+}
+.pricing-sec .order .fine {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--faded);
+  line-height: 1.8;
+  text-transform: uppercase;
+}
+
+/* ---------- the stages after the first ----------
+   The form does not change shape between them: the phone and the email
+   stay where they are and stop being editable, and the six digits arrive
+   in a row beneath them. */
+
+/* Locked rather than disabled — a disabled field greys its own text out,
+   and the two answers already given are the point of the stage. */
+.pricing-sec .order input[readonly] {
+  border-color: var(--rule);
+  color: var(--faded);
+  cursor: default;
+}
+.pricing-sec .order input[readonly]:focus {
+  border-color: var(--rule);
+  box-shadow: none;
+}
+
+/* Six digits, spaced like a code and not like a sentence. */
+.pricing-sec .order .code-in {
+  letter-spacing: 0.4em;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pricing-sec .order .code-again {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px 18px;
+  margin-top: -4px;
+}
+.pricing-sec .order .mono-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  color: var(--faded);
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.pricing-sec .order .mono-link:hover:not(:disabled) {
+  color: var(--stamp);
+}
+.pricing-sec .order .mono-link:disabled {
+  cursor: default;
+  text-decoration: none;
+  opacity: 0.65;
+}
+
+/* The button is the only thing that can be in flight, so it is the only
+   thing that says so. */
+.pricing-sec .order .btn:disabled {
+  cursor: default;
+  background: var(--faded);
+}
+
+/* ---------- what replaces the form ----------
+   One line about what happened, and one about what to watch for. */
+.pricing-sec .order.done {
+  gap: 10px;
+  padding-top: 4px;
+}
+.pricing-sec .order .done-line {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+  color: var(--settled);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* The reference's button, which is not this site's .btn: mono, small,
+   square, and blue on hover rather than lighter. Scoped, so the rest of
+   the page keeps the button it has. */
+.pricing-sec .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  min-height: 0;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  background: var(--ink);
+  color: var(--paper);
+  text-decoration: none;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+.pricing-sec .btn:hover {
+  background: var(--stamp);
+  color: var(--btn-hover-ink);
+}
+
+/* The reference's button used to be scoped here, because the rest of the
+   site had a different one. It does not any more — .btn in index.css is
+   this button — so all that is left is the one thing that is about this
+   form rather than about buttons: the full-width one under the fields. */
+.pricing-sec .order .btn {
+  margin-top: 6px;
+  padding: 16px 18px;
+  font-size: 12px;
+  width: 100%;
+}
+
+/* ---------- mobile: tiers stack, receipt becomes a sticky pay sheet ---------- */
+@media (max-width: 900px) {
+  .pricing-sec .sec {
+    padding: 84px 24px;
+  }
+
+  /* Every section on this page is z-10, and later siblings paint over
+     earlier ones — so without this the sections below pricing would cover
+     the fixed pay sheet. */
+  .pricing-sec {
+    z-index: 35;
+  }
+
+  .pricing-sec .pricing {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .pricing-sec .tiers,
+  .pricing-sec .rcpt {
+    min-height: 0;
+  }
+  .pricing-sec .tiers {
+    justify-content: flex-start;
+  }
+
+  .pricing-sec .pricing-right {
+    position: static;
+  }
+  .pricing-sec .paysheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 35;
+    background: var(--desk);
+    border-top: 1.5px solid var(--ink);
+    box-shadow: 0 -14px 34px -22px rgba(28, 28, 22, 0.75);
+    /* The small viewport, so an open sheet is not taller than the screen
+       the moment iOS puts its toolbar back. See --svh in index.css. */
+    max-height: 88vh;
+    max-height: calc(88 * var(--svh));
+    overflow-y: auto;
+    /* A sheet that has run out of scroll must not start scrolling the page
+       behind it: on a phone that is the reader losing the form they were
+       filling in, mid-field, to a flick that overshot. */
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+
+    /* Off screen until the section it belongs to is. `visibility` as well
+       as the transform, so a bar that is not showing cannot take a tap
+       meant for the button underneath it. */
+    transform: translateY(101%);
+    visibility: hidden;
+    transition:
+      transform 260ms var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1)),
+      visibility 0s linear 260ms;
+  }
+
+  .pricing-sec .paysheet[data-near='true'] {
+    transform: none;
+    visibility: visible;
+    transition:
+      transform 260ms var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1)),
+      visibility 0s;
+  }
+
+  /* Sixteen pixels, which is the number iOS Safari checks before it decides
+     to zoom the whole page in on a focused field. Below it the reader taps
+     the phone number, the page jumps to 130%, and every following field is
+     off the side of the screen. */
+  .pricing-sec .order input {
+    font-size: 16px;
+  }
+
+  .pricing-sec .paysheet-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    cursor: pointer;
+    list-style: none;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+  }
+  .pricing-sec .paysheet-bar::-webkit-details-marker {
+    display: none;
+  }
+  .pricing-sec .ps-name {
+    color: var(--faded);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+  .pricing-sec .ps-total {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .pricing-sec .ps-cta {
+    background: var(--ink);
+    color: var(--paper);
+    font-weight: 700;
+    padding: 10px 14px;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+  .pricing-sec .paysheet[open] .ps-cta {
+    background: var(--rule);
+    color: var(--ink);
+  }
+
+  .pricing-sec .paysheet-body {
+    padding: 4px 20px 24px;
+  }
+  .pricing-sec .paysheet .rcpt,
+  .pricing-sec .paysheet .order {
+    max-width: none;
+  }
+
+  /* the sheet covers the footer, so give the page room to scroll past it */
+  body:has(.pricing-sec) footer {
+    padding-bottom: 96px;
+  }
+}
+
+@media (max-width: 420px) {
+  .pricing-sec .rcpt {
+    padding: 22px 18px 26px;
+  }
+  .pricing-sec .tier-card {
+    padding: 16px;
+  }
+  .pricing-sec .tier-in:checked + .tier-card {
+    padding: 15.5px;
+  }
+  .pricing-sec .paysheet-bar {
+    padding: 12px 16px;
+    gap: 9px;
+  }
+  .pricing-sec .paysheet-body {
+    padding: 4px 16px 20px;
+  }
+
+  /* Long values would otherwise force horizontal page overflow, because
+     .ln .k and .ln .v are nowrap. Let them wrap and keep the value
+     right-aligned so the dotted leader still reads as a leader. */
+  .pricing-sec .ln {
+    flex-wrap: wrap;
+    font-size: 11px;
+  }
+  .pricing-sec .ln .k,
+  .pricing-sec .ln .v {
+    white-space: normal;
+  }
+  .pricing-sec .ln .v {
+    text-align: right;
+  }
+  .pricing-sec .ln .lead {
+    min-width: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pricing-sec .rcpt {
+    animation: none;
+  }
+}

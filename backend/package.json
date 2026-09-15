@@ -1,0 +1,33 @@
+{
+  "name": "mr20-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Serverless backend for the MR20 AI pendant: ingest, transcription, diarization and enrichment.",
+  "bin": {
+    "mr20-backend": "bin/app.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "synth": "./go/build.sh && cdk synth",
+    "deploy": "./go/build.sh && cdk deploy --all --require-approval never",
+    "deploy:web": "cdk deploy LyznWebStack --require-approval never",
+    "diff": "cdk diff",
+    "destroy": "cdk destroy",
+    "build:go": "./go/build.sh",
+    "test": "cd go && go test ./..."
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^22.10.2",
+    "@types/source-map-support": "^0.5.10",
+    "aws-cdk": "^2.1128.0",
+    "esbuild": "^0.24.2",
+    "source-map-support": "^0.5.21",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.173.2",
+    "constructs": "^10.4.2"
+  }
+}

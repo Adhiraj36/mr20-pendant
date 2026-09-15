@@ -1,0 +1,48 @@
+# Audio pulled off the pendant is real recorded audio from whoever wore it.
+# Keep it out of version control.
+*.mp3
+*.wav
+pendantlib/
+library/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# app + backend
+node_modules/
+backend/cdk.out/
+backend/dist/
+backend/outputs.json
+mobile/.expo/
+mobile/.test-build/
+mobile/dist/
+mobile/ios/
+mobile/android/
+
+# Build outputs — the dev client APK is 139 MB and is rebuilt from source
+*.apk
+*.aab
+
+# Build output: APKs are large binaries, not source.
+dist/
+
+# macOS junk
+.DS_Store
+
+# Local build artifacts: the iOS archive EAS drops here, and the Android APKs.
+mobile/build-*.ipa
+mobile/*.ipa
+
+# The Swift SDK is its own repository, pushed to github.com/MelloB1989/mr20.sdk
+# and checked out here for convenience. It is managed through its own remote.
+ios-sdk/
+
+# Playwright MCP screenshot scratch
+.playwright-mcp/
+.superpowers/
+
+# Local credentials for testing — never commit
+.env

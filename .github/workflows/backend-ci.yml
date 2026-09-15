@@ -1,0 +1,136 @@
+name: backend
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+defaults:
+  run:
+    working-directory: backend
+
+concurrency:
+  group: backend-deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go/go.mod
+
+      - name: Go test
+        working-directory: backend/go
+        run: go test ./...
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      # ffmpeg and DeepFilterNet are ~90 MB fetched from third-party hosts.
+      # They change only when fetch-audio-tools.sh names a new version.
+      - uses: actions/cache@v4
+        with:
+          path: backend/go/lambda-assets
+          key: audio-tools-${{ hashFiles('backend/go/fetch-audio-tools.sh') }}
+
+      - run: npm ci
+      - run: npm run build
+      - name: cdk synth
+        run: npm run synth
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go/go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - uses: actions/cache@v4
+        with:
+          path: backend/go/lambda-assets
+          key: audio-tools-${{ hashFiles('backend/go/fetch-audio-tools.sh') }}
+
+      - run: npm ci
+
+      # ExtractFn's container image is built for linux/arm64 (see lib/mr20-stack.ts),
+      # but this runner is x86_64. Without QEMU + buildx, `cdk deploy` runs the
+      # Dockerfile's arm64 steps (e.g. `pip install`) natively and they fail with
+      # an exec-format error.
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-south-1
+
+      - name: cdk deploy
+        run: npm run deploy
+
+      # The Fargate voice service pulls its image by the fixed tag `:latest`
+      # from ECR, so `cdk deploy` re-uploading the source asset never rebuilds
+      # or redeploys it on its own — CodeBuild has to run, then the service
+      # has to be told to pull the new image. See the comment above VoiceRepo
+      # in lib/mr20-stack.ts.
+      #
+      # The voice service is only in the stack when it is deployed with
+      # -c voice=true (see the voice section in lib/mr20-stack.ts). Without
+      # it there is no VoiceImageBuildProject output, and there is nothing to
+      # rebuild — so this step reads the output first and skips itself.
+      - name: Rebuild and redeploy the voice service image
+        run: |
+          set -euo pipefail
+          OUT=$(aws cloudformation describe-stacks --stack-name Mr20PendantStack --region ap-south-1 --query "Stacks[0].Outputs" --output json)
+          project=$(echo "$OUT" | jq -r '.[] | select(.OutputKey=="VoiceImageBuildProject") | .OutputValue')
+          if [ -z "$project" ]; then
+            echo "voice service is not deployed (no VoiceImageBuildProject output); nothing to rebuild"
+            exit 0
+          fi
+          cluster=$(echo "$OUT" | jq -r '.[] | select(.OutputKey=="VoiceClusterName") | .OutputValue')
+          service=$(echo "$OUT" | jq -r '.[] | select(.OutputKey=="VoiceServiceName") | .OutputValue')
+
+          build_id=$(aws codebuild start-build --project-name "$project" --region ap-south-1 --query "build.id" --output text)
+          echo "started build $build_id"
+
+          status="IN_PROGRESS"
+          while [ "$status" = "IN_PROGRESS" ]; do
+            sleep 10
+            status=$(aws codebuild batch-get-builds --ids "$build_id" --region ap-south-1 --query "builds[0].buildStatus" --output text)
+            echo "build status: $status"
+          done
+          if [ "$status" != "SUCCEEDED" ]; then
+            echo "voice image build failed: $status" >&2
+            exit 1
+          fi
+
+          aws ecs update-service --cluster "$cluster" --service "$service" --force-new-deployment --region ap-south-1 >/dev/null
+          echo "redeployed $service on $cluster"

@@ -1,0 +1,26 @@
+{
+  "name": "@lyzn/dashboard-kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The components and styles an agent's dashboard is built from.",
+  "exports": {
+    "./catalog": "./src/catalog.ts",
+    "./dist/*": "./dist/*"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "tsc -p tsconfig.json --noEmit && node --test --experimental-strip-types test/*.test.ts"
+  },
+  "dependencies": {
+    "@lyzn/design": "file:../design"
+  },
+  "devDependencies": {
+    "@fontsource/archivo": "^5.1.0",
+    "@fontsource/martian-mono": "^5.1.0",
+    "@types/node": "^22.14.0",
+    "esbuild": "^0.25.12",
+    "happy-dom": "^20.14.5",
+    "typescript": "~5.8.3"
+  }
+}

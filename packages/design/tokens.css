@@ -1,0 +1,112 @@
+/* Generated from @lyzn/design/src/tokens.ts — do not edit. */
+@theme {
+  --color-ink: #0b0b0c;
+  --color-charcoal: #131315;
+  --color-void: #050506;
+  --color-graphite: #1c1c1f;
+  --color-graphite-2: #242428;
+  --color-paper: #f3f1ec;
+  --color-paper-2: #eae7e0;
+  --color-paper-3: #ddd9d0;
+  --color-desk: #e3e4de;
+  --color-sheet: #fbfbf8;
+  --color-faded: #6e6f64;
+  --color-rule: #d5d5cc;
+  --color-fg: #edeae4;
+  --color-fg-muted: #a6a39d;
+  --color-fg-faint: #8d8c87;
+  --color-inkfg: #141416;
+  --color-inkmuted: #5b5a57;
+  --color-inkfaint: #66655f;
+  --color-signal: #c9a76a;
+  --color-danger: #b03a2e;
+  --color-stamp: #3b2fd4;
+  --color-settled: #1b6b45;
+  --color-receipt-paper: #fbfaf6;
+  --color-receipt-ink: #16181a;
+  --color-receipt-faint: #8a8880;
+  --color-desk-ink: #1c1c16;
+  --color-desk-muted: #3b3b33;
+  --color-desk-faint: #6e6f64;
+  --color-desk-line: #d9d9d1;
+  --color-carbon: #f1e8cc;
+  --color-carbon-line: #ddd2ae;
+  --color-night: #1c1c16;
+  --color-night-panel: #111109;
+  --color-night-line: #4a4a3e;
+  --color-night-muted: #9c9c90;
+  --color-night-faint: #8a8a7e;
+  --color-carbon-deep: #3a3323;
+  --color-carbon-deep-line: #554c34;
+  --color-carbon-deep-ink: #ebdfb8;
+  --color-carbon-deep-muted: #cfc7ae;
+  --color-stamp-night: #8b82ff;
+  --color-settled-night: #6fcf9a;
+  --color-danger-night: #e0705e;
+  --font-sans: 'Archivo', 'Archivo Fallback', 'Archivo Fallback Arial', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Martian Mono', 'Martian Mono Fallback', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --dur-micro: 120ms;
+  --dur-ui: 160ms;
+  --dur-reveal: 700ms;
+  --dur-slow: 900ms;
+}
+
+/* The three display sizes: the fit index.css sets .display-xl/l/m and
+   h1, h2, h3 in, so the heading and the token are one thing. */
+:root {
+  --type-display-xl-size: clamp(2.5rem, 7vw, 6.5rem);
+  --type-display-xl-weight: 800;
+  --type-display-xl-tracking: -0.038em;
+  --type-display-xl-leading: 0.97;
+  --type-display-l-size: clamp(2rem, 4.5vw, 4rem);
+  --type-display-l-weight: 800;
+  --type-display-l-tracking: -0.035em;
+  --type-display-l-leading: 1.02;
+  --type-display-m-size: clamp(1.5rem, 2.6vw, 2.25rem);
+  --type-display-m-weight: 800;
+  --type-display-m-tracking: -0.02em;
+  --type-display-m-leading: 1.1;
+}
+
+/* The phone's lower floor for the headline — see the note in gen-css.mjs. */
+@media (min-width: 640px) {
+  :root {
+    --type-display-xl-size: clamp(2.75rem, 7vw, 6.5rem);
+  }
+}
+
+/* The button: one object, one size, one face. The compact pair is the
+   narrower button, not a second one. */
+:root {
+  --btn-size: 11px;
+  --btn-weight: 700;
+  --btn-tracking: 0.1em;
+  --btn-pad-y: 12px;
+  --btn-pad-x: 18px;
+  --btn-pad-y-compact: 11px;
+  --btn-pad-x-compact: 14px;
+  --btn-fill: #141416;
+  --btn-ink: #fbfbf8;
+  --btn-hover: #3b2fd4;
+  --btn-hover-ink: #ffffff;
+}
+
+/* The reader's ink. One attribute on <html>, and this is the whole effect. */
+[data-ink="red"] {
+  --heading: #a30002;
+}
+[data-ink="orange"] {
+  --heading: #7d4600;
+}
+[data-ink="green"] {
+  --heading: #006826;
+}
+[data-ink="blue"] {
+  --heading: #0052a8;
+}
+[data-ink="purple"] {
+  --heading: #8400a1;
+}

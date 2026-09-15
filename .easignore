@@ -1,0 +1,54 @@
+# What EAS Build is sent, and what it is not.
+#
+# The archive is taken from the repository root rather than from mobile/,
+# because the app depends on ../packages/design by path — so everything else
+# in this monorepo would ride along unless it is named here. The first upload
+# came to 2.4 GB against a 2.0 GB limit.
+#
+# IMPORTANT: this file REPLACES .gitignore for the archive. Anything that must
+# not leave this machine has to be named here as well, however thoroughly
+# .gitignore already covers it. That is what the first block is.
+
+# Never upload.
+.env
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+*.p8
+*.jks
+*.keystore
+**/secrets/
+
+# Installed and generated on the build machine, not sent to it.
+**/node_modules/
+mobile/ios/
+mobile/android/
+mobile/.expo/
+**/.expo-shared/
+
+# The other halves of the product: a Go backend, a Vite site, an Electron app
+# and the writing about all three. None of it is compiled into the phone app.
+backend/
+web/
+desktop/
+docs/
+references/
+.superpowers/
+.claude/
+
+# Build outputs and vendored SDKs that nothing in the app imports: previously
+# built apks and ipas, the hardware handoff bundle, and the pendant's own iOS
+# SDK. Nearly a gigabyte between them, and the archive is uploaded on every
+# single build.
+dist/
+ios-sdk/
+build-apk.sh
+__pycache__/
+**/__pycache__/
+.playwright-mcp/
+
+# Local noise.
+.git/
+**/*.log
+**/.DS_Store

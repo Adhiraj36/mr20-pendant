@@ -1,0 +1,16 @@
+node_modules/
+dist/
+release/
+
+# The bundled daemon and its provenance are build output, not source. Built by
+# scripts/build-core.sh from a KARMAX checkout.
+resources/karmax-*
+resources/core.json
+
+*.log
+.DS_Store
+
+# TypeScript incremental build state.
+*.tsbuildinfo
+resources/dictate/
+.test-build/
